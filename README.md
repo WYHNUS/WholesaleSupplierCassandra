@@ -23,7 +23,7 @@ Language used: [Java](http://www.oracle.com/technetwork/java/javase/overview/jav
 1. Open up Java IDE and import this project _(IntelliJ is used for this project, but other Java IDE should be similar)_.
 2. Add Java8 and Datastax Java Driver as dependency for the project _(It is recommended to use Maven for convenience)_.
 
-![screen shot for IntelliJ](/IntelliJ%20dep%20screenshot.png)
+![screen shot for IntelliJ](/img/IntelliJ%20dep%20screenshot.png)
 
 3. Start cassandra on local machine: `<path to cassandra folder>/cassandra -f`
 4. In `src/Setup.java` update variable values for `CONTACT_POINT` and `KEY_SPACE` 
