@@ -1,11 +1,21 @@
+import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 /**
  * Set up the keyspace and schema for cassandra project.
  */
 class Setup {
-    static final String CONTACT_POINT = "192.168.1.101";
+    static final String CONTACT_POINT = "127.0.0.1";
     static final String KEY_SPACE = "wholesale_supplier";
 
     private Session session;
@@ -21,12 +31,19 @@ class Setup {
                 .build();
         session = cluster.connect();
 
+        dropOldKeySpace();
         createKeySpace();
         createSchema();
+        loadData();
+    }
+
+    private void dropOldKeySpace() {
+        String dropKeySpaceCmd = "DROP KEYSPACE IF EXISTS " + KEY_SPACE;
+        session.execute(dropKeySpaceCmd);
     }
 
     private void createKeySpace() {
-        String createKeySpaceCmd = "CREATE KEYSPACE IF NOT EXISTS " + KEY_SPACE
+        String createKeySpaceCmd = "CREATE KEYSPACE " + KEY_SPACE
                 + " WITH replication = {"
                 + " 'class' : " + "'SimpleStrategy'" + ","
                 + " 'replication_factor' : " + "1" + "};";
@@ -67,9 +84,11 @@ class Setup {
                 + " C_ID int, "
                 + " C_FIRST text, "
                 + " C_MIDDLE text, "
+                + " C_LAST text, "
                 + " C_STREET_1 text, "
                 + " C_STREET_2 text, "
                 + " C_CITY text, "
+                + " C_STATE text, "
                 + " C_ZIP text, "
                 + " C_PHONE text, "
                 + " C_SINCE timestamp, "
@@ -167,5 +186,116 @@ class Setup {
         System.out.println("Successfully created table : stocks");
 
         System.out.println("All tables are created successfully.");
+    }
+
+    private void loadData() {
+        loadWarehouse();
+        loadDistricts();
+        loadCustomers();
+        // load into top_balance_customers
+
+        // load into orders_by_timestamp
+
+        // load into items
+
+        // load into order_lines
+
+        // load into stocks
+    }
+
+    private void loadCustomers() {
+        String insertDistrictsCmd = "INSERT INTO " + KEY_SPACE + ".customers ("
+                + " C_W_ID, C_D_ID, C_ID, C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2,"
+                + " C_CITY, C_STATE, C_ZIP, C_PHONE, C_SINCE, C_CREDIT, C_CREDIT_LIM,"
+                + " C_DISCOUNT, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_DELIVERY_CNT,"
+                + " C_DATA, C_LASR_ORDER) "
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
+                + " ?, ?, ?, ?, ?, ?, ?, ?, ?); ";
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+
+        int index = 0;
+        try {
+            System.out.println("Start loading data for table : customers");
+            FileReader fr = new FileReader("data/customer.csv");
+            BufferedReader bf = new BufferedReader(fr);
+
+            String line;
+            while ((line= bf.readLine())!=null) {
+                index++;
+                String[] lineData =line.split(",");
+                PreparedStatement prepared = session.prepare(insertDistrictsCmd);
+                BoundStatement bound = prepared.bind(
+                        Integer.parseInt(lineData[0]), Integer.parseInt(lineData[1]), Integer.parseInt(lineData[2]),
+                        lineData[3], lineData[4], lineData[5], lineData[6],
+                        lineData[7], lineData[8], lineData[9], lineData[10], lineData[11],
+                        df.parse(lineData[12]), lineData[13],
+                        new BigDecimal(lineData[14]), new BigDecimal(lineData[15]), new BigDecimal(lineData[16]),
+                        Float.parseFloat(lineData[17]), Integer.parseInt(lineData[18]), Integer.parseInt(lineData[19]),
+                        lineData[20]);
+                // todo(wangyanhao): attribute 'C_LASR_ORDER' is currently left empty, will add this in later on
+                session.execute(bound);
+            }
+
+            System.out.println("Successfully loaded all data for table : customers ");
+        } catch (IOException | ParseException e) {
+            System.out.println("Load data failed with error : " + e.getMessage() + " at line " + index);
+        }
+    }
+
+    private void loadDistricts() {
+        String insertDistrictsCmd = "INSERT INTO " + KEY_SPACE + ".districts ("
+                + " D_W_ID, D_ID, D_NAME, D_STREET_1, D_STREET_2, D_CITY, "
+                + " D_STATE, D_ZIP, D_TAX, D_YTD, D_NEXT_O_ID ) "
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); ";
+
+        try {
+            System.out.println("Start loading data for table : districts");
+            FileReader fr = new FileReader("data/district.csv");
+            BufferedReader bf = new BufferedReader(fr);
+
+            String line;
+            while ((line= bf.readLine())!=null) {
+                String[] lineData =line.split(",");
+                PreparedStatement prepared = session.prepare(insertDistrictsCmd);
+                BoundStatement bound = prepared.bind(
+                        Integer.parseInt(lineData[0]), Integer.parseInt(lineData[1]),
+                        lineData[2], lineData[3], lineData[4], lineData[5], lineData[6], lineData[7],
+                        new BigDecimal(lineData[8]), new BigDecimal(lineData[9]),
+                        Integer.parseInt(lineData[10]));
+                session.execute(bound);
+            }
+
+            System.out.println("Successfully loaded all data for table : districts ");
+        } catch (IOException e) {
+            System.out.println("Load data failed with error : " + e.getMessage());
+        }
+    }
+
+    private void loadWarehouse() {
+        String insertWarehousesCmd = "INSERT INTO " + KEY_SPACE + ".warehouses ("
+                + " W_ID, W_NAME, W_STREET_1, W_STREET_2, W_CITY, "
+                + " W_STATE, W_ZIP, W_TAX, W_YTD ) "
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?); ";
+
+        try {
+            System.out.println("Start loading data for table : warehouses");
+            FileReader fr = new FileReader("data/warehouse.csv");
+            BufferedReader bf = new BufferedReader(fr);
+
+            String line;
+            while ((line= bf.readLine())!=null) {
+                String[] lineData =line.split(",");
+                PreparedStatement prepared = session.prepare(insertWarehousesCmd);
+                BoundStatement bound = prepared.bind(
+                        Integer.parseInt(lineData[0]), lineData[1], lineData[2],
+                        lineData[3], lineData[4], lineData[5], lineData[6],
+                        new BigDecimal(lineData[7]), new BigDecimal(lineData[8]));
+                session.execute(bound);
+            }
+
+            System.out.println("Successfully loaded all data for table : warehouses ");
+        } catch (IOException e) {
+            System.out.println("Load data failed with error : " + e.getMessage());
+        }
     }
 }

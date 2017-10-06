@@ -1,3 +1,8 @@
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
+
+import java.util.List;
+
 /**
  * Implementation of seven transaction types:
  * 1. New Order Transaction processes a new customer order.
@@ -11,5 +16,29 @@
  * 7. Top-Balance Transaction identifies the top-10 customers with the highest outstanding payment balance.
  */
 class Transactions {
+    static final String CONTACT_POINT = Setup.CONTACT_POINT;
+    static final String KEY_SPACE = Setup.KEY_SPACE;
 
+    private Session session;
+
+    Transactions() {
+        Cluster cluster = Cluster.builder()
+                .addContactPoint(CONTACT_POINT)
+                .build();
+        session = cluster.connect(KEY_SPACE);
+    }
+
+    /**
+     *
+     * @param cId : used for customer identifier
+     * @param wId : used for customer identifier
+     * @param dID : used for customer identifier
+     * @param itemOrders : each item consist of:
+     *                   - item number for item
+     *                   - supplier warehouse for item
+     *                   - quantity ordered for item
+     */
+    void processOrder(int cId, int wId, int dID, List<List<Integer>> itemOrders) {
+
+    }
 }

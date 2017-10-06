@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -23,6 +25,22 @@ public class Main {
             switch (instruction[0]) {
                 case "N":
                     // new order transaction
+                    int itemCount = Integer.parseInt(instruction[instruction.length - 1]);
+
+                    List<List<Integer>> itemOrders = new ArrayList<>();
+                    for (int i = 0; i < itemCount; i++) {
+                        String[] orderString = sc.nextLine().split(",");
+                        List<Integer> order = new ArrayList<>();
+                        for (String s : orderString) {
+                            order.add(Integer.parseInt(s));
+                        }
+                        itemOrders.add(order);
+                    }
+
+                    transaction.processOrder(Integer.parseInt(instruction[1]),
+                            Integer.parseInt(instruction[2]),
+                            Integer.parseInt(instruction[3]),
+                            itemOrders);
                     break;
                 case "P":
                     // payment transaction
