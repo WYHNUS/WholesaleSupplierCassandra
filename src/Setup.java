@@ -10,6 +10,9 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Set up the keyspace and schema for cassandra project.
@@ -17,6 +20,8 @@ import java.text.SimpleDateFormat;
 class Setup {
     static final String CONTACT_POINT = "127.0.0.1";
     static final String KEY_SPACE = "wholesale_supplier";
+
+    static final DateFormat DF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
     private Session session;
 
@@ -174,8 +179,10 @@ class Setup {
         System.out.println("Successfully created table : districts");
         session.execute(createCustomersCmd);
         System.out.println("Successfully created table : customers");
-        session.execute(createTopBalanceCustomersCmd);
-        System.out.println("Successfully created table : top_balance_customers");
+        // this table is temporarily removed since its update would be inefficient for Payment Transaction
+        // will enable it again or remove it permanently when a better plan comes up
+//        session.execute(createTopBalanceCustomersCmd);
+//        System.out.println("Successfully created table : top_balance_customers");
         session.execute(createOrdersByTimestampCmd);
         System.out.println("Successfully created table : orders_by_timestamp");
         session.execute(createItemsCmd);
@@ -191,54 +198,185 @@ class Setup {
     private void loadData() {
         loadWarehouse();
         loadDistricts();
-        loadCustomers();
-        // load into top_balance_customers
-
-        // load into orders_by_timestamp
-
-        // load into items
-
-        // load into order_lines
-
-        // load into stocks
+        loadCustomerAndOrder();
+        loadItems();
+        loadOrderLines();
+        loadStock();
+        System.out.println("All data are loaded successfully.");
     }
 
-    private void loadCustomers() {
-        String insertDistrictsCmd = "INSERT INTO " + KEY_SPACE + ".customers ("
+    private void loadStock() {
+        String insertStocksCmd = "INSERT INTO " + KEY_SPACE + ".stocks ("
+                + " S_W_ID, S_I_ID, S_QUANTITY, S_YTD, S_ORDER_CNT, S_REMOTE_CNT, "
+                + " S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, "
+                + " S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10, S_DATA ) "
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); ";
+
+        try {
+            System.out.println("Start loading data for table : stocks");
+            FileReader fr = new FileReader("data/stock.csv");
+            BufferedReader bf = new BufferedReader(fr);
+
+            String line;
+            while ((line = bf.readLine()) != null) {
+                String[] lineData =line.split(",");
+                PreparedStatement prepared = session.prepare(insertStocksCmd);
+                BoundStatement bound = prepared.bind(
+                        Integer.parseInt(lineData[0]), Integer.parseInt(lineData[1]),
+                        new BigDecimal(lineData[2]), new BigDecimal(lineData[3]),
+                        Integer.parseInt(lineData[4]), Integer.parseInt(lineData[5]),
+                        lineData[6], lineData[7], lineData[8], lineData[9], lineData[10],
+                        lineData[11], lineData[12], lineData[13], lineData[14], lineData[15],
+                        lineData[16]);
+                session.execute(bound);
+            }
+
+            System.out.println("Successfully loaded all data for table : stocks ");
+        } catch (IOException e) {
+            System.out.println("Load data failed with error : " + e.getMessage());
+        }
+    }
+
+    private void loadOrderLines() {
+        String insertOrderLinesCmd = "INSERT INTO " + KEY_SPACE + ".order_lines ("
+                + " OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER, OL_I_ID, "
+                + " OL_DELIVERY_D, OL_AMOUNT, OL_SUPPLY_W_ID, OL_QUANTITY, OL_DIST_INFO ) "
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?); ";
+
+        try {
+            System.out.println("Start loading data for table : order_lines");
+            FileReader fr = new FileReader("data/order-line.csv");
+            BufferedReader bf = new BufferedReader(fr);
+
+            String line;
+            while ((line = bf.readLine()) != null) {
+                String[] lineData =line.split(",");
+                PreparedStatement prepared = session.prepare(insertOrderLinesCmd);
+                Date date;
+                if (lineData[5].equals("null")) {
+                    date = null;
+                } else {
+                    date = DF.parse(lineData[5]);
+                }
+                BoundStatement bound = prepared.bind(
+                        Integer.parseInt(lineData[0]), Integer.parseInt(lineData[1]), Integer.parseInt(lineData[2]),
+                        Integer.parseInt(lineData[3]), Integer.parseInt(lineData[4]),
+                        date, new BigDecimal(lineData[6]),
+                        Integer.parseInt(lineData[7]), new BigDecimal(lineData[8]), lineData[9]);
+                if (date == null) {
+                    bound.unset(5 /* don't set date if null */);
+                }
+                session.execute(bound);
+            }
+
+            System.out.println("Successfully loaded all data for table : order_lines ");
+        } catch (IOException | ParseException e) {
+            System.out.println("Load data failed with error : " + e.getMessage());
+        }
+    }
+
+    // load order and customer together as customer make use of data from order file
+    private void loadCustomerAndOrder() {
+        String insertOrdersCmd = "INSERT INTO " + KEY_SPACE + ".orders_by_timestamp ("
+                + " O_W_ID, O_D_ID, O_ENTRY_D, O_ID, "
+                + " O_C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL ) "
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?); ";
+        String insertCustomerCmd = "INSERT INTO " + KEY_SPACE + ".customers ("
                 + " C_W_ID, C_D_ID, C_ID, C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2,"
                 + " C_CITY, C_STATE, C_ZIP, C_PHONE, C_SINCE, C_CREDIT, C_CREDIT_LIM,"
                 + " C_DISCOUNT, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_DELIVERY_CNT,"
                 + " C_DATA, C_LASR_ORDER) "
                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,"
                 + " ?, ?, ?, ?, ?, ?, ?, ?, ?); ";
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
-        int index = 0;
+        FileReader fr;
+        BufferedReader bf;
+        String line;
+        Map<Integer, Integer> hm = new HashMap<>();
+
         try {
-            System.out.println("Start loading data for table : customers");
-            FileReader fr = new FileReader("data/customer.csv");
-            BufferedReader bf = new BufferedReader(fr);
+            System.out.println("Start loading data for table : orders_by_timestamp");
+            fr = new FileReader("data/order.csv");
+            bf = new BufferedReader(fr);
 
-            String line;
-            while ((line= bf.readLine())!=null) {
-                index++;
+            while ((line = bf.readLine()) != null) {
                 String[] lineData =line.split(",");
-                PreparedStatement prepared = session.prepare(insertDistrictsCmd);
+                PreparedStatement prepared = session.prepare(insertOrdersCmd);
+
+                // set c_last_order map
+                int orderId = Integer.parseInt(lineData[2]);
+                int customerId = Integer.parseInt(lineData[3]);
+                if (!hm.containsKey(customerId)) {
+                    hm.put(customerId, orderId);
+                } else if (hm.get(customerId) < orderId) {
+                    hm.put(customerId, orderId);
+                }
+
+                int carrierId = 0;
+                if (!lineData[4].equals("null")) {
+                    carrierId = Integer.parseInt(lineData[4]);
+                }
                 BoundStatement bound = prepared.bind(
-                        Integer.parseInt(lineData[0]), Integer.parseInt(lineData[1]), Integer.parseInt(lineData[2]),
+                        Integer.parseInt(lineData[0]), Integer.parseInt(lineData[1]),
+                        DF.parse(lineData[7]), orderId, customerId, carrierId,
+                        new BigDecimal(lineData[5]), new BigDecimal(lineData[6]));
+                if (!lineData[4].equals("null")) {
+                    bound.unset(5 /* don't set O_CARRIER_ID if null */);
+                }
+                session.execute(bound);
+            }
+            System.out.println("Successfully loaded all data for table : orders_by_timestamp ");
+
+            // load customer
+            System.out.println("Start loading data for table : customers");
+            fr = new FileReader("data/customer.csv");
+            bf = new BufferedReader(fr);
+
+            while ((line = bf.readLine()) != null) {
+                String[] lineData =line.split(",");
+                PreparedStatement prepared = session.prepare(insertCustomerCmd);
+                int customerId = Integer.parseInt(lineData[2]);
+                int lastOrderId = hm.get(customerId);
+                BoundStatement bound = prepared.bind(
+                        Integer.parseInt(lineData[0]), Integer.parseInt(lineData[1]), customerId,
                         lineData[3], lineData[4], lineData[5], lineData[6],
                         lineData[7], lineData[8], lineData[9], lineData[10], lineData[11],
-                        df.parse(lineData[12]), lineData[13],
+                        DF.parse(lineData[12]), lineData[13],
                         new BigDecimal(lineData[14]), new BigDecimal(lineData[15]), new BigDecimal(lineData[16]),
                         Float.parseFloat(lineData[17]), Integer.parseInt(lineData[18]), Integer.parseInt(lineData[19]),
-                        lineData[20]);
-                // todo(wangyanhao): attribute 'C_LASR_ORDER' is currently left empty, will add this in later on
+                        lineData[20], lastOrderId);
                 session.execute(bound);
             }
 
             System.out.println("Successfully loaded all data for table : customers ");
         } catch (IOException | ParseException e) {
-            System.out.println("Load data failed with error : " + e.getMessage() + " at line " + index);
+            System.out.println("Load data failed with error : " + e.getMessage());
+        }
+    }
+
+    private void loadItems() {
+        String insertItemsCmd = "INSERT INTO " + KEY_SPACE + ".items ("
+                + " I_ID, I_NAME, I_PRICE, I_IM_ID, I_DATA ) "
+                + " VALUES (?, ?, ?, ?, ?); ";
+
+        try {
+            System.out.println("Start loading data for table : items");
+            FileReader fr = new FileReader("data/item.csv");
+            BufferedReader bf = new BufferedReader(fr);
+
+            String line;
+            while ((line = bf.readLine()) != null) {
+                String[] lineData =line.split(",");
+                PreparedStatement prepared = session.prepare(insertItemsCmd);
+                BoundStatement bound = prepared.bind(
+                        Integer.parseInt(lineData[0]), lineData[1], new BigDecimal(lineData[2]),
+                        Integer.parseInt(lineData[3]), lineData[4]);
+                session.execute(bound);
+            }
+
+            System.out.println("Successfully loaded all data for table : items ");
+        } catch (IOException e) {
+            System.out.println("Load data failed with error : " + e.getMessage());
         }
     }
 
@@ -254,7 +392,7 @@ class Setup {
             BufferedReader bf = new BufferedReader(fr);
 
             String line;
-            while ((line= bf.readLine())!=null) {
+            while ((line = bf.readLine()) != null) {
                 String[] lineData =line.split(",");
                 PreparedStatement prepared = session.prepare(insertDistrictsCmd);
                 BoundStatement bound = prepared.bind(
@@ -283,7 +421,7 @@ class Setup {
             BufferedReader bf = new BufferedReader(fr);
 
             String line;
-            while ((line= bf.readLine())!=null) {
+            while ((line = bf.readLine()) != null) {
                 String[] lineData =line.split(",");
                 PreparedStatement prepared = session.prepare(insertWarehousesCmd);
                 BoundStatement bound = prepared.bind(
