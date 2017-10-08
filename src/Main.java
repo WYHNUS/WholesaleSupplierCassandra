@@ -44,9 +44,15 @@ public class Main {
                     break;
                 case "P":
                     // payment transaction
+                    transaction.processPayment(Integer.parseInt(instruction[1]),
+                            Integer.parseInt(instruction[2]),
+                            Integer.parseInt(instruction[3]),
+                            Float.parseFloat(instruction[4]));
                     break;
                 case "D":
                     // delivery transaction
+                    transaction.processDelivery(Integer.parseInt(instruction[1]),
+                            Integer.parseInt(instruction[2]));
                     break;
                 case "O":
                     // Order-Status transaction
