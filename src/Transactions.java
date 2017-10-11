@@ -22,8 +22,12 @@ class Transactions {
     private Session session;
     private PaymentTransaction paymentTransaction;
     private DeliveryTransaction deliveryTransaction;
+    private OrderStatusTransaction orderStatusTransaction;
+    private StockLevelTransaction stockLevelTransaction;
     private PopularItemTransaction popularItemTransaction;
     //private TopBalanceTransaction topBalanceTransaction;
+
+
 
     Transactions() {
         Cluster cluster = Cluster.builder()
@@ -32,8 +36,11 @@ class Transactions {
         session = cluster.connect(KEY_SPACE);
         paymentTransaction = new PaymentTransaction(session);
         deliveryTransaction = new DeliveryTransaction(session);
+        orderStatusTransaction = new OrderStatusTransaction(session);
+        stockLevelTransaction = new StockLevelTransaction(session);
         popularItemTransaction = new PopularItemTransaction(session) ;
         //topBalanceTransaction = new TopBalanceTransaction(session);
+
     }
 
     /* Start of public methods */
@@ -58,6 +65,15 @@ class Transactions {
 
     void processDelivery(int wId, int carrierId) {
         deliveryTransaction.processDelivery(wId, carrierId);
+    }
+
+    void processOrderStatus(int c_W_ID, int c_D_ID, int c_ID){
+        orderStatusTransaction.processOrderStatus(c_W_ID, c_D_ID, c_ID);
+    }
+
+
+    void processStockLevel(int w_ID, int d_ID, int T, int L){
+        stockLevelTransaction.processStockLevel(w_ID, d_ID, T, L);
     }
 
     void popularItem(int wId, int dId, int numOfOrders) {
