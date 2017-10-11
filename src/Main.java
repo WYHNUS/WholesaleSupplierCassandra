@@ -69,9 +69,13 @@ public class Main {
                     break;
                 case "I":
                     // Popular-Item transaction
+                    transaction.popularItem(Integer.parseInt(instruction[1]),
+                            Integer.parseInt(instruction[2]),
+                            Integer.parseInt(instruction[3]));
                     break;
                 case "T":
                     // Top-Balance transaction
+                    transaction.topBalance();
                     break;
                 default:
                     System.out.println("Unsupported transaction type!");
