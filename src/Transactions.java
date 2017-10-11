@@ -20,13 +20,23 @@ class Transactions {
     static final String KEY_SPACE = Setup.KEY_SPACE;
 
     private Session session;
+    private PaymentTransaction paymentTransaction;
+    private DeliveryTransaction deliveryTransaction;
+    private OrderStatusTransaction orderStatusTransaction;
+    private StockLevelTransaction stockLevelTransaction;
 
     Transactions() {
         Cluster cluster = Cluster.builder()
                 .addContactPoint(CONTACT_POINT)
                 .build();
         session = cluster.connect(KEY_SPACE);
+        paymentTransaction = new PaymentTransaction(session);
+        deliveryTransaction = new DeliveryTransaction(session);
+        orderStatusTransaction = new OrderStatusTransaction(session);
+        stockLevelTransaction = new StockLevelTransaction(session);
     }
+
+    /* Start of public methods */
 
     /**
      * New Order Transaction
@@ -77,5 +87,22 @@ class Transactions {
         // output itemOrders.size(), TOTOAL_AMOUNT
         // for each itemOrder
             // output itemId, itemName, warehouseId, quantity, OL_AMOUNT, S_QUANTITY
+    }
+
+    void processPayment(int wId, int dId, int cId, float payment) {
+        paymentTransaction.processPayment(wId, dId, cId, payment);
+    }
+
+    void processDelivery(int wId, int carrierId) {
+        deliveryTransaction.processDelivery(wId, carrierId);
+    }
+
+    void processOrderStatus(int c_W_ID, int c_D_ID, int c_ID){
+        orderStatusTransaction.processOrderStatus(c_W_ID, c_D_ID, c_ID);
+    }
+
+
+    void processStockLevel(int w_ID, int d_ID, int T, int L){
+        stockLevelTransaction.processStockLevel(w_ID, d_ID, T, L);
     }
 }
