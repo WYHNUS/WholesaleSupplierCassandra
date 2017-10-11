@@ -40,7 +40,8 @@ class Setup {
         dropOldKeySpace();
         createKeySpace();
         createSchema();
-        loadData();
+        createView();
+//        loadData();
     }
 
     private void dropOldKeySpace() {
@@ -83,7 +84,7 @@ class Setup {
                 + " D_YTD decimal, "
                 + " D_NEXT_O_ID int, "
                 + " PRIMARY KEY (D_W_ID, D_ID) "
-                + " ) WITH CLUSTERING ORDER BY (D_ID ASC);";
+                + " );";
         String createCustomersCmd = "CREATE TABLE " + KEY_SPACE + ".customers ("
                 + " C_W_ID int, "
                 + " C_D_ID int, "
@@ -107,20 +108,22 @@ class Setup {
                 + " C_DELIVERY_CNT int, "
                 + " C_DATA text, "
                 + " C_LASR_ORDER int, "
+                + " C_ENTRY_D timestamp, "
+                + " C_CARRIER_ID int, "
                 + " PRIMARY KEY (C_W_ID, C_D_ID, C_ID) "
-                + " ) WITH CLUSTERING ORDER BY (C_D_ID ASC);";
-        String createTopBalanceCustomersCmd = "CREATE TABLE " + KEY_SPACE + ".top_balance_customers ("
-                + " W_ID int, "
-                + " C_BALANCE int, "
-                + " D_ID int, "
-                + " C_ID decimal, "
-                + " W_NAME text, "
-                + " D_NAME text, "
-                + " C_FIRST text, "
-                + " C_MIDDLE text, "
-                + " C_LAST text, "
-                + " PRIMARY KEY (W_ID, C_BALANCE, D_ID, C_ID) "
-                + " ) WITH CLUSTERING ORDER BY (C_BALANCE DESC);";
+                + " );";
+//        String createTopBalanceCustomersCmd = "CREATE TABLE " + KEY_SPACE + ".top_balance_customers ("
+//                + " W_ID int, "
+//                + " C_BALANCE int, "
+//                + " D_ID int, "
+//                + " C_ID decimal, "
+//                + " W_NAME text, "
+//                + " D_NAME text, "
+//                + " C_FIRST text, "
+//                + " C_MIDDLE text, "
+//                + " C_LAST text, "
+//                + " PRIMARY KEY (W_ID, C_BALANCE, D_ID, C_ID) "
+//                + " ) WITH CLUSTERING ORDER BY (C_BALANCE DESC);";
         String createOrdersByTimestampCmd = "CREATE TABLE " + KEY_SPACE + ".orders_by_timestamp ("
                 + " O_W_ID int, "
                 + " O_D_ID int, "
@@ -130,8 +133,25 @@ class Setup {
                 + " O_CARRIER_ID int, "
                 + " O_OL_CNT decimal, "
                 + " O_ALL_LOCAL decimal, "
-                + " PRIMARY KEY (O_W_ID, O_ENTRY_D, O_D_ID, O_ID, O_C_ID) "
+                + " O_C_FIRST text, "
+                + " O_C_MIDDLE text, "
+                + " O_C_LAST text, "
+                + " PRIMARY KEY ((O_W_ID, O_D_ID, O_ID, O_C_ID), O_ENTRY_D) "
                 + " ) WITH CLUSTERING ORDER BY (O_ENTRY_D DESC);";
+        String createOrdersByIdCmd = "CREATE TABLE " + KEY_SPACE + ".orders_by_id ("
+                + " O_W_ID int, "
+                + " O_D_ID int, "
+                + " O_ID int, "
+                + " O_C_ID int, "
+                + " O_ENTRY_D timestamp, "
+                + " O_CARRIER_ID int, "
+                + " O_OL_CNT decimal, "
+                + " O_ALL_LOCAL decimal, "
+                + " O_C_FIRST text, "
+                + " O_C_MIDDLE text, "
+                + " O_C_LAST text, "
+                + " PRIMARY KEY ((O_W_ID, O_D_ID), O_ID, O_C_ID) "
+                + " ) WITH CLUSTERING ORDER BY (O_ID ASC);";
         String createItemsCmd = "CREATE TABLE " + KEY_SPACE + ".items ("
                 + " I_ID int, "
                 + " I_NAME text, "
@@ -146,12 +166,13 @@ class Setup {
                 + " OL_O_ID int, "
                 + " OL_NUMBER int, "
                 + " OL_I_ID int, "
+                + " OL_I_NAME text, "
                 + " OL_DELIVERY_D timestamp, "
                 + " OL_AMOUNT decimal, "
                 + " OL_SUPPLY_W_ID int, "
                 + " OL_QUANTITY decimal, "
                 + " OL_DIST_INFO text, "
-                + " PRIMARY KEY (OL_W_ID, OL_NUMBER, OL_D_ID, OL_O_ID) "
+                + " PRIMARY KEY ((OL_W_ID, OL_D_ID, OL_O_ID), OL_NUMBER) "
                 + " ) WITH CLUSTERING ORDER BY (OL_NUMBER ASC);";
         String createStocksCmd = "CREATE TABLE " + KEY_SPACE + ".stocks ("
                 + " S_W_ID int, "
@@ -172,7 +193,7 @@ class Setup {
                 + " S_DIST_10 text, "
                 + " S_DATA text, "
                 + " PRIMARY KEY (S_W_ID, S_I_ID) "
-                + " ) WITH CLUSTERING ORDER BY (S_I_ID ASC);";
+                + " );";
 
         session.execute(createWarehousesCmd);
         System.out.println("Successfully created table : warehouses");
@@ -186,6 +207,8 @@ class Setup {
 //        System.out.println("Successfully created table : top_balance_customers");
         session.execute(createOrdersByTimestampCmd);
         System.out.println("Successfully created table : orders_by_timestamp");
+        session.execute(createOrdersByIdCmd);
+        System.out.println("Successfully created table : orders_by_id");
         session.execute(createItemsCmd);
         System.out.println("Successfully created table : items");
         session.execute(createOrderLinesCmd);
@@ -204,6 +227,17 @@ class Setup {
         loadOrderLines();
         loadStock();
         System.out.println("All data are loaded successfully.");
+    }
+
+    private void createView() {
+        String createViewCmd = "CREATE MATERIALIZED VIEW " + KEY_SPACE + ".customers_balances AS "
+                + " SELECT C_ID from " + KEY_SPACE + ".customers "
+                + " WHERE C_W_ID IS NOT NULL AND C_D_ID IS NOT NULL AND C_ID IS NOT NULL "
+                + " AND C_BALANCE IS NOT NULL "
+                + " PRIMARY KEY (C_W_ID, C_D_ID, C_ID, C_BALANCE)"
+                + " WITH CLUSTERING ORDER BY (C_BALANCE DESC)";
+        session.execute(createViewCmd);
+        System.out.println("Successfully created materialized view : customers_balances");
     }
 
     private void loadStock() {

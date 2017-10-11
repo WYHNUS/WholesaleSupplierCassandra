@@ -20,6 +20,7 @@ class Transactions {
     static final String KEY_SPACE = Setup.KEY_SPACE;
 
     private Session session;
+    private OrderTransaction orderTransaction;
     private PaymentTransaction paymentTransaction;
     private DeliveryTransaction deliveryTransaction;
     private OrderStatusTransaction orderStatusTransaction;
@@ -30,6 +31,7 @@ class Transactions {
                 .addContactPoint(CONTACT_POINT)
                 .build();
         session = cluster.connect(KEY_SPACE);
+        orderTransaction = new OrderTransaction(session);
         paymentTransaction = new PaymentTransaction(session);
         deliveryTransaction = new DeliveryTransaction(session);
         orderStatusTransaction = new OrderStatusTransaction(session);
@@ -38,55 +40,8 @@ class Transactions {
 
     /* Start of public methods */
 
-    /**
-     * New Order Transaction
-     * @param cId : used for customer identifier
-     * @param wId : used for customer identifier
-     * @param dID : used for customer identifier
-     * @param itemOrders : each itemOrder consist of:
-     *                   - itemId: item number for item
-     *                   - warehouseId: supplier warehouse for item
-     *                   - quantity: quantity ordered for item
-     */
     void processOrder(int cId, int wId, int dID, List<List<Integer>> itemOrders) {
-        // query customers using (wId, dID, cId)
-        // query districts using (wId, dID) to get D_TAX
-        // query warehouses using (wId) to get W_TAX
-
-        // read N=D_NEXT_O_ID from districts using (wId, dID)
-
-        // update district (wId, dID) by increase D_NEXT_O_ID by one
-
-        // let O_ENTRY_D = current date and time
-        // let O_OL_CNT = itemOrders.size()
-        // Check if any of the supplier warehouse for item != wId, if exists, O_ALL_LOCAL = 0, else O_ALL_LOCAL = 1
-        // create new order (O_ID=N, dID, wId, cId, O_ENTRY_D, O_OL_CNT, O_ALL_LOCAL)
-
-        // TOTOAL_AMOUNT = 0
-        // for each itemOrder with index i in itemOrders
-            // query stocks, use (warehouseId, itemId) to get S_QUANTITY, S_YTD, S_ORDER_CNT, S_REMOTE_CNT
-            // set ADJUSTED_QTY = S_QUANTITY - quantity
-            // if ADJUSTED_QTY < 10, ADJUSTED_QTY += 100
-            // S_YTD += quantity
-            // S_ORDER_CNT++
-            // if (warehouseId != wId) S_REMOTE_CNT++
-            // update stock (warehouseId, itemId) with:
-                // (ADJUSTED_QTY, S_YTD, S_ORDER_CNT, S_REMOTE_CNT)
-            // query items using itemId to get I_PRICE, itemName
-            // ITEM_AMOUNT = quantity * I_PRICE
-            // TOTOAL_AMOUNT += ITEM_AMOUNT
-            // create new order-line with (OL_O_ID = N, OL_D_ID = dID, OL_W_ID = wId,
-            // OL_NUMBER = i, OL_I_ID = itemId, OL_SUPPLY_W_ID = warehouseId, OL_QUANTITY = quantity,
-            // OL_AMOUNT = ITEM_AMOUNT, OL_DIST_INFO = "S_DIST"+dID)
-
-        // TOTOAL_AMOUNT *= (1 + D_TAX + W_TAX) * (1 - C_DISCOUNT)
-
-        // output customer identifier (wId, dID, cId), lastname C_LAST, credit C_CREDIT, discount C_DISCOUNT
-        // output W_TAX and D_TAX
-        // output O_ID, O_ENTRY_D
-        // output itemOrders.size(), TOTOAL_AMOUNT
-        // for each itemOrder
-            // output itemId, itemName, warehouseId, quantity, OL_AMOUNT, S_QUANTITY
+        orderTransaction.processOrder(cId, wId, dID, itemOrders);
     }
 
     void processPayment(int wId, int dId, int cId, float payment) {
@@ -100,7 +55,6 @@ class Transactions {
     void processOrderStatus(int c_W_ID, int c_D_ID, int c_ID){
         orderStatusTransaction.processOrderStatus(c_W_ID, c_D_ID, c_ID);
     }
-
 
     void processStockLevel(int w_ID, int d_ID, int T, int L){
         stockLevelTransaction.processStockLevel(w_ID, d_ID, T, L);
