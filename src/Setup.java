@@ -16,12 +16,13 @@ import java.util.Map;
 
 /**
  * Set up the keyspace and schema for cassandra project.
+ * Bulk load data from .csv files.
  */
 class Setup {
     static final String CONTACT_POINT = "127.0.0.1";
     static final String KEY_SPACE = "wholesale_supplier";
 
-    static final DateFormat DF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+    private static final DateFormat DF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
     private Session session;
 
