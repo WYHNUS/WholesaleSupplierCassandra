@@ -21,6 +21,7 @@ class Transactions {
 
     private Session session;
     private PaymentTransaction paymentTransaction;
+    private DeliveryTransaction deliveryTransaction;
 
     Transactions() {
         Cluster cluster = Cluster.builder()
@@ -28,6 +29,7 @@ class Transactions {
                 .build();
         session = cluster.connect(KEY_SPACE);
         paymentTransaction = new PaymentTransaction(session);
+        deliveryTransaction = new DeliveryTransaction(session);
     }
 
     /* Start of public methods */
@@ -48,5 +50,9 @@ class Transactions {
 
     void processPayment(int wId, int dId, int cId, float payment) {
         paymentTransaction.processPayment(wId, dId, cId, payment);
+    }
+
+    void processDelivery(int wId, int carrierId) {
+        deliveryTransaction.processDelivery(wId, carrierId);
     }
 }
