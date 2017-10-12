@@ -29,13 +29,16 @@ public class TopBalanceTransaction {
                     + "LIMIT 10;";
     TopBalanceTransaction(Session session) {
         this.session = session;
-        this.selectTopBalanceStmt = session.prepare(SELECT_TOP_BALANCE);
+        selectTopBalanceStmt = session.prepare(SELECT_TOP_BALANCE);
     }
 
     /* Start of public methods */
     void topBalance() {
         ResultSet resultSet = session.execute(selectTopBalanceStmt.bind());
         List<Row> topCustomers = resultSet.all();
+        for(Row cus: topCustomers){
+            System.out.println(cus.getString("c_id"));
+        }
         //outputTopBalance(topCustomers);
 
     }
