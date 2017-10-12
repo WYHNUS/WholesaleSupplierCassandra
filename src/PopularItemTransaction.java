@@ -1,11 +1,8 @@
-import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.ResultSet;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -74,7 +71,7 @@ public class PopularItemTransaction {
 //            customers.add(getCustomer(wId, dId, cId));
             popularItem = getPopularItem(wId, dId, orderId);
             for (Row item: popularItem) {
-                if popularItems.contains(item.getInt("ol_i_id")) {
+                if (popularItems.contains(item.getInt("ol_i_id"))) {
                     popularItems.add(item.getInt("ol_i_id"));
                 }
             }
@@ -85,7 +82,7 @@ public class PopularItemTransaction {
             itemId = popularItems.get(i);
 //            orderId = lastOrders.get(i)[0];
 //            itemName[i] = getItemName(itemId);
-            percentage[i] = getPercentage(wId, dId, lastOrders, itemId)
+            percentage[i] = getPercentage(wId, dId, lastOrders, itemId);
         }
         outputPopularItems(wId, dId, numOfOrders, lastOrders, customers, popularItems, percentage);
     }
@@ -96,7 +93,7 @@ public class PopularItemTransaction {
     private void selectLastOrders(final int wId, final int dId, final int numOfOrders) {
         ResultSet resultSet = session.execute(selectLastOrdersStmt.bind(wId, dId, numOfOrders));
         List<Row> lastOrders = resultSet.all();
-        return lastOrders
+        return lastOrders;
     }
 
 //    private void getCustomer(final int wId, final int dId, final int cId) {
@@ -112,7 +109,7 @@ public class PopularItemTransaction {
         ResultSet resultSet = session.execute(selectMaxQuantityStmt.bind(wId, dId, orderLine));
         List<Row> maxQuantity= (resultSet.all()).get(0).getInt("ol_quantity");
 
-        ResultSet resultSet = session.execute(selectPopularItemStmt.bind(wId, dId, orderLine, maxQuantity);
+        ResultSet resultSet = session.execute(selectPopularItemStmt.bind(wId, dId, orderLine, maxQuantity));
         List<Row> popularItem = resultSet.all();
         return popularItem;
     }
@@ -123,17 +120,17 @@ public class PopularItemTransaction {
 //        return itemName.get(0);
 //    }
 
-    private void getPercentage(inal int wId, final int dId, final List<Row> lastOrders, final int itemId) {
+    private void getPercentage(final int wId, final int dId, final List<Row> lastOrders, final int itemId) {
         int count = 0;
         for (int i = 0; i < lastOrders.size(); i++) {
             orderId = lastOrders.get(i).getInt("o_id");
-            ResultSet resultSet = session.execute(selectOrderWithItem.bind(wId, dId, orderId, itemId);
+            ResultSet resultSet = session.execute(selectOrderWithItem.bind(wId, dId, orderId, itemId));
             List<Row> result = resultSet.all();
             if (!result.isEmpty()){
                 count++;
             }
         }
-        return count
+        return count;
 
     }
 
