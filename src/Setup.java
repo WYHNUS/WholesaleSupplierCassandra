@@ -1,7 +1,4 @@
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -105,7 +102,7 @@ class Setup {
                 + " C_PAYMENT_CNT int, "
                 + " C_DELIVERY_CNT int, "
                 + " C_DATA text, "
-                + " C_LASR_ORDER int, "
+                + " C_LAST_ORDER int, "
                 + " C_ENTRY_D timestamp, "
                 + " C_CARRIER_ID int, "
                 + " PRIMARY KEY (C_W_ID, C_D_ID, C_ID) "
@@ -244,13 +241,13 @@ class Setup {
                 + " S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10, S_DATA ) "
                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); ";
         PreparedStatement insertStockStmt = session.prepare(insertStocksCmd);
+        String line;
 
         try {
             System.out.println("Start loading data for table : stocks");
             FileReader fr = new FileReader("data/stock.csv");
             BufferedReader bf = new BufferedReader(fr);
 
-            String line;
             while ((line = bf.readLine()) != null) {
                 String[] lineData =line.split(",");
                 BoundStatement bound = insertStockStmt.bind(
@@ -424,9 +421,6 @@ class Setup {
                         new BigDecimal(lineData[14]), new BigDecimal(lineData[15]), new BigDecimal(lineData[16]),
                         Float.parseFloat(lineData[17]), Integer.parseInt(lineData[18]), Integer.parseInt(lineData[19]),
                         lineData[20], triple.first, triple.second, triple.third);
-                if ((int)triple.third == -1) {
-                    bound.unset(23 /* don't set C_CARRIER_ID if null */);
-                }
                 session.execute(bound);
             }
             System.out.println("Successfully loaded all data for table : customers ");
@@ -444,7 +438,6 @@ class Setup {
                         order.wId, order.dId, order.id, order.cId,
                         order.entryDate, order.carrierId, order.olCnt, order.allLocal,
                         triple.first, triple.second, triple.third);
-
                 session.execute(boundByTimestamp);
                 session.execute(boundById);
             }
@@ -460,13 +453,13 @@ class Setup {
                 + " D_STATE, D_ZIP, D_TAX, D_YTD, D_NEXT_O_ID ) "
                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); ";
         PreparedStatement insertByDistrictStmt = session.prepare(insertDistrictsCmd);
+        String line;
 
         try {
             System.out.println("Start loading data for table : districts");
             FileReader fr = new FileReader("data/district.csv");
             BufferedReader bf = new BufferedReader(fr);
 
-            String line;
             while ((line = bf.readLine()) != null) {
                 String[] lineData =line.split(",");
                 BoundStatement bound = insertByDistrictStmt.bind(
@@ -489,13 +482,12 @@ class Setup {
                 + " W_STATE, W_ZIP, W_TAX, W_YTD ) "
                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?); ";
         PreparedStatement insertWarehouseStmt = session.prepare(insertWarehousesCmd);
+        String line;
 
         try {
             System.out.println("Start loading data for table : warehouses");
             FileReader fr = new FileReader("data/warehouse.csv");
             BufferedReader bf = new BufferedReader(fr);
-
-            String line;
             while ((line = bf.readLine()) != null) {
                 String[] lineData =line.split(",");
                 BoundStatement bound = insertWarehouseStmt.bind(
