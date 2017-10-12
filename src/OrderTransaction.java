@@ -1,12 +1,40 @@
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
 import java.util.List;
 
 class OrderTransaction {
     private Session session;
+    private PreparedStatement selectWarehouseStmt;
+    private PreparedStatement selectDistrictStmt;
+    private PreparedStatement selectCustomerStmt;
+    private PreparedStatement updateDistrictNextOIdStmt;
+
+    private static final String SELECT_WAREHOUSE =
+            " SELECT W_TAX FROM warehouses "
+                    + " WHERE W_ID = ?; ";
+    private static final String SELECT_DISTRICT =
+            " SELECT D_TAX, D_NEXT_O_ID FROM districts "
+                    + " WHERE D_W_ID = ? AND D_ID = ?; ";
+    private static final String SELECT_CUSTOMER =
+            "SELECT c_w_id, c_d_id, c_id, c_first, c_middle, c_last, c_street_1, c_street_2, "
+                    + "c_city, c_state, c_zip, c_phone, c_since, c_credit, c_credit_lim, "
+                    + "c_discount, c_balance, c_ytd_payment, c_payment_cnt "
+                    + "FROM customers "
+                    + "WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?;";
+    private static final String UPDATE_DISTRICT_NEXT_O_ID =
+            "UPDATE districts "
+                    + " SET D_NEXT_O_ID = ? "
+                    + " WHERE D_W_ID = ? AND D_ID = ?; ";
 
     OrderTransaction(Session session) {
         this.session = session;
+        this.selectWarehouseStmt = session.prepare(SELECT_WAREHOUSE);
+        this.selectDistrictStmt = session.prepare(SELECT_DISTRICT);
+        this.selectCustomerStmt = session.prepare(SELECT_CUSTOMER);
+        this.updateDistrictNextOIdStmt = session.prepare(UPDATE_DISTRICT_NEXT_O_ID);
     }
 
     /**
@@ -20,13 +48,18 @@ class OrderTransaction {
      *                   - quantity: quantity ordered for item
      */
     void processOrder(int cId, int wId, int dID, List<List<Integer>> itemOrders) {
-        // query customers using (wId, dID, cId)
-        // query districts using (wId, dID) to get D_TAX
-        // query warehouses using (wId) to get W_TAX
+        Row customer = getCustomer(wId, dID, cId);
+        Row district = getDTax(wId, dID);
+        Row warehouse = getWTax(wId);
+
+        double dTax = district.getDecimal("D_TAX").doubleValue();
+        double wTax = warehouse.getDecimal("W_TAX").doubleValue();
 
         // read N=D_NEXT_O_ID from districts using (wId, dID)
+        int nextOId = district.getInt("D_NEXT_O_ID");
 
         // update district (wId, dID) by increase D_NEXT_O_ID by one
+        updateDistrictNextOId(nextOId + 1, wId, dID);
 
         // let O_ENTRY_D = current date and time
         // let O_OL_CNT = itemOrders.size()
@@ -61,5 +94,27 @@ class OrderTransaction {
         // output itemOrders.size(), TOTOAL_AMOUNT
         // for each itemOrder
         // output itemId, itemName, warehouseId, quantity, OL_AMOUNT, S_QUANTITY
+    }
+
+    private void updateDistrictNextOId(int nextOId, int wId, int dId) {
+        session.execute(updateDistrictNextOIdStmt.bind(nextOId, wId, dId));
+    }
+
+    private Row getCustomer(int wId, int dID, int cId) {
+        ResultSet resultSet = session.execute(selectCustomerStmt.bind(wId, dID, cId));
+        List<Row> customers = resultSet.all();
+        return (!customers.isEmpty()) ? customers.get(0) : null;
+    }
+
+    private Row getWTax(int wId) {
+        ResultSet resultSet = session.execute(selectWarehouseStmt.bind(wId));
+        List<Row> warehouses = resultSet.all();
+        return (!warehouses.isEmpty()) ? warehouses.get(0) : null;
+    }
+
+    private Row getDTax(int wId, int dId) {
+        ResultSet resultSet = session.execute(selectDistrictStmt.bind(wId, dId));
+        List<Row> districts = resultSet.all();
+        return (!districts.isEmpty()) ? districts.get(0) : null;
     }
 }
