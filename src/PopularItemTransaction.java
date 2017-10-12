@@ -4,6 +4,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Implementation of seven transaction types:
@@ -57,19 +58,19 @@ public class PopularItemTransaction {
     /**
      *
      * @param wId : used for customer identifier
-     * @param dID : used for customer identifier
+     * @param dId : used for customer identifier
      * @param numOfOrders : number of lastest order to be considered
      */
 
     void popularItem(int wId, int dId, int numOfOrders) {
         List<Row> lastOrders = selectLastOrders(wId, dId, numOfOrders);
 //        List<Row> customers = new List();
-        List<int> popularItems = new List();
+        List<Integer> popularItems = new ArrayList<Integer>();;
         for (int i = 0; i < numOfOrders; i++) {
-            orderId = lastOrders.get(i).getInt("o_id");
+            int orderId = lastOrders.get(i).getInt("o_id");
 //            cId = lastOrders.get(i)[1];
 //            customers.add(getCustomer(wId, dId, cId));
-            popularItem = getPopularItem(wId, dId, orderId);
+            List<Row>popularItem = getPopularItem(wId, dId, orderId);
             for (Row item: popularItem) {
                 if (popularItems.contains(item.getInt("ol_i_id"))) {
                     popularItems.add(item.getInt("ol_i_id"));
@@ -79,18 +80,18 @@ public class PopularItemTransaction {
         int[] percentage = new int[popularItems.size()];
 //        String[] itemName = new String[popularItems.size()]
         for (int i = 0; i < popularItems.size(); i++){
-            itemId = popularItems.get(i);
+            int itemId = popularItems.get(i);
 //            orderId = lastOrders.get(i)[0];
 //            itemName[i] = getItemName(itemId);
             percentage[i] = getPercentage(wId, dId, lastOrders, itemId);
         }
-        outputPopularItems(wId, dId, numOfOrders, lastOrders, customers, popularItems, percentage);
+        //outputPopularItems(wId, dId, numOfOrders, lastOrders,popularItems, percentage);
     }
 
 
     /*  End of public methods */
     /*  popular items */
-    private void selectLastOrders(final int wId, final int dId, final int numOfOrders) {
+    private List<Row> selectLastOrders(final int wId, final int dId, final int numOfOrders) {
         ResultSet resultSet = session.execute(selectLastOrdersStmt.bind(wId, dId, numOfOrders));
         List<Row> lastOrders = resultSet.all();
         return lastOrders;
@@ -105,12 +106,12 @@ public class PopularItemTransaction {
 //        }
 //    }
 
-    private void getPopularItem(final int wId, final int dId, final int orderId) {
-        ResultSet resultSet = session.execute(selectMaxQuantityStmt.bind(wId, dId, orderLine));
-        List<Row> maxQuantity= (resultSet.all()).get(0).getInt("ol_quantity");
+    private List<Row> getPopularItem(final int wId, final int dId, final int orderId) {
+        ResultSet resultSet1 = session.execute(selectMaxQuantityStmt.bind(wId, dId, orderId));
+        int maxQuantity= (resultSet1.all()).get(0).getInt("ol_quantity");
 
-        ResultSet resultSet = session.execute(selectPopularItemStmt.bind(wId, dId, orderLine, maxQuantity));
-        List<Row> popularItem = resultSet.all();
+        ResultSet resultSet2 = session.execute(selectPopularItemStmt.bind(wId, dId, orderId, maxQuantity));
+        List<Row> popularItem = resultSet2.all();
         return popularItem;
     }
 
@@ -120,11 +121,11 @@ public class PopularItemTransaction {
 //        return itemName.get(0);
 //    }
 
-    private void getPercentage(final int wId, final int dId, final List<Row> lastOrders, final int itemId) {
+    private int getPercentage(final int wId, final int dId, final List<Row> lastOrders, final int itemId) {
         int count = 0;
         for (int i = 0; i < lastOrders.size(); i++) {
-            orderId = lastOrders.get(i).getInt("o_id");
-            ResultSet resultSet = session.execute(selectOrderWithItem.bind(wId, dId, orderId, itemId));
+            int orderId = lastOrders.get(i).getInt("o_id");
+            ResultSet resultSet = session.execute(selectOrderWithItemStmt.bind(wId, dId, orderId, itemId));
             List<Row> result = resultSet.all();
             if (!result.isEmpty()){
                 count++;

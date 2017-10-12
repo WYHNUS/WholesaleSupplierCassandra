@@ -1,11 +1,8 @@
-import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.ResultSet;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -28,8 +25,8 @@ public class TopBalanceTransaction {
 
     private static final String SELECT_TOP_BALANCE =
             "SELECT * "
-            + "FROM customers_balances "
-            + "LIMIT 10;";
+                    + "FROM customers_balances "
+                    + "LIMIT 10;";
     TopBalanceTransaction(Session session) {
         this.session = session;
         this.selectTopBalanceStmt = session.prepare(SELECT_TOP_BALANCE);
@@ -37,9 +34,9 @@ public class TopBalanceTransaction {
 
     /* Start of public methods */
     void topBalance() {
-        ResultSet resultSet = session.execute(selectTopBalance);
+        ResultSet resultSet = session.execute(selectTopBalanceStmt.bind());
         List<Row> topCustomers = resultSet.all();
-        outputTopBalance(topCustmers);
+        //outputTopBalance(topCustomers);
 
     }
 
