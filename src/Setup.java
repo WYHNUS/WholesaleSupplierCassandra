@@ -228,7 +228,7 @@ class Setup {
                 + " SELECT C_ID from " + KEY_SPACE + ".customers "
                 + " WHERE C_W_ID IS NOT NULL AND C_D_ID IS NOT NULL AND C_ID IS NOT NULL "
                 + " AND C_BALANCE IS NOT NULL "
-                + " PRIMARY KEY (C_W_ID, C_D_ID, C_ID, C_BALANCE)"
+                + " PRIMARY KEY (C_BALANCE, C_W_ID, C_D_ID, C_ID)"
                 + " WITH CLUSTERING ORDER BY (C_BALANCE DESC)";
         session.execute(createViewCmd);
         System.out.println("Successfully created materialized view : customers_balances");
