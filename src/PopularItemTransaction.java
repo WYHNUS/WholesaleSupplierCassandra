@@ -67,6 +67,7 @@ public class PopularItemTransaction {
         int num = lastOrders.size();
 //        List<Row> customers = new List();
         List<Integer> popularItems = new ArrayList();
+        List<String> popularItemNames = new ArrayList();
         System.out.println("order ids");
         for (int i = 0; i < num; i++) {
             int orderId = lastOrders.get(i).getInt("o_id");
@@ -80,6 +81,7 @@ public class PopularItemTransaction {
                 System.out.println(itemId);
                 if (popularItems.contains(itemId)) {
                     popularItems.add(itemId);
+                    popularItemNames.add(item.getString("ol_i_name"));
                 }
             }
         }
