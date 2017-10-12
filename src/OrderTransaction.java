@@ -18,6 +18,7 @@ class OrderTransaction {
     private PreparedStatement updateStockStmt;
     private PreparedStatement insertOrderByTimestampStmt;
     private PreparedStatement insertOrderByIdStmt;
+    private PreparedStatement insertOrderLineStmt;
 
     private static final String SELECT_WAREHOUSE =
             " SELECT W_TAX "
@@ -28,9 +29,7 @@ class OrderTransaction {
                     + " FROM districts "
                     + " WHERE D_W_ID = ? AND D_ID = ?; ";
     private static final String SELECT_CUSTOMER =
-            " SELECT C_FIRST, C_MIDDLE, C_LAST, "
-                    + " c_credit, c_credit_lim, "
-                    + "c_discount, c_balance, c_ytd_payment, c_payment_cnt "
+            " SELECT C_FIRST, C_MIDDLE, C_LAST, C_CREDIT, C_DISCOUNT "
                     + " FROM customers "
                     + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?; ";
     private static final String SELECT_STOCK =
@@ -47,11 +46,11 @@ class OrderTransaction {
                     + " WHERE D_W_ID = ? AND D_ID = ?; ";
     private static final String UPDATE_CUSTOMER_ORDER =
             " UPDATE customers "
-                    + " SET C_LAST_ORDER = ? AND C_ENTRY_D = ? AND C_CARRIER_ID = ? "
+                    + " SET C_LAST_ORDER = ?, C_ENTRY_D = ?, C_CARRIER_ID = ? "
                     + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?; ";
     private static final String UPDATE_STOCK =
             " UPDATE stocks "
-                    + " SET S_QUANTITY = ? AND S_YTD = ? AND S_ORDER_CNT = ? AND S_REMOTE_CNT = ? "
+                    + " SET S_QUANTITY = ?, S_YTD = ?, S_ORDER_CNT = ?, S_REMOTE_CNT = ? "
                     + " WHERE S_W_ID = ? AND S_I_ID = ?; ";
     private static final String INSERT_ORDER_BY_TIMESTAMP =
             " INSERT INTO orders_by_timestamp ("
@@ -65,6 +64,11 @@ class OrderTransaction {
                     + " O_ENTRY_D, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, "
                     + " O_C_FIRST, O_C_MIDDLE, O_C_LAST ) "
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?); ";
+    private static final String INSERT_ORDER_LINE =
+            "INSERT INTO order_lines ("
+                    + " OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER, OL_I_ID, OL_I_NAME, "
+                    + " OL_AMOUNT, OL_SUPPLY_W_ID, OL_QUANTITY, OL_DIST_INFO ) "
+                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?); ";
 
     OrderTransaction(Session session) {
         this.session = session;
@@ -78,6 +82,7 @@ class OrderTransaction {
         this.updateStockStmt = session.prepare(UPDATE_STOCK);
         this.insertOrderByTimestampStmt = session.prepare(INSERT_ORDER_BY_TIMESTAMP);
         this.insertOrderByIdStmt = session.prepare(INSERT_ORDERS_BY_ID);
+        this.insertOrderLineStmt = session.prepare(INSERT_ORDER_LINE);
     }
 
     /**
@@ -92,8 +97,8 @@ class OrderTransaction {
      */
     void processOrder(int cId, int wId, int dId, List<List<Integer>> itemOrders) {
         Row customer = getCustomer(wId, dId, cId);
-        Row district = getDTax(wId, dId);
-        Row warehouse = getWTax(wId);
+        Row district = getDistrict(wId, dId);
+        Row warehouse = getWarehouse(wId);
 
         double dTax = district.getDecimal("D_TAX").doubleValue();
         double wTax = warehouse.getDecimal("W_TAX").doubleValue();
@@ -122,7 +127,6 @@ class OrderTransaction {
             int quantity = itemOrders.get(0).get(2);
 
             Row stock = selectStock(iWId, iId);
-
             double adjQuantity = stock.getDecimal("S_QUANTITY").doubleValue() - quantity;
             while (adjQuantity < 10) {
                 adjQuantity += 100;
@@ -136,25 +140,42 @@ class OrderTransaction {
                             : stock.getInt("S_REMOTE_CNT"));
 
             Row item = selectItem(iId);
-            long itemAmount = quantity * item.getInt("I_PRICE");
-
+            String itemName = item.getString("I_NAME");
+            double itemAmount = quantity * item.getInt("I_PRICE");
             totalAmount += itemAmount;
-            // create new order-line with (OL_O_ID = N, OL_D_ID = dID, OL_W_ID = wId,
-            // OL_NUMBER = i, OL_I_ID = itemId, OL_SUPPLY_W_ID = warehouseId, OL_QUANTITY = quantity,
-            // OL_AMOUNT = ITEM_AMOUNT, OL_DIST_INFO = "S_DIST"+dID)
-//            createNewOrderLine(wId, dId, nextOId, i, iId, item.getString("I_NAME"),
-//                    /*delivery date*/ itemAmount, iWId, quantity, "S_DIST" + dId);
+            createNewOrderLine(wId, dId, nextOId, i, iId, itemName,
+                    itemAmount, quantity, iWId, stock.getString(getDistrictStringId(dId)));
 
+            // log
+            System.out.printf(
+                    "itemId: %d, itemName: %s, warehouseId: %d, quantity: %d, OL_AMOUNT: %f, S_QUANTITY: %f \n",
+                    iId, itemName, iWId, quantity, itemAmount, adjQuantity);
         }
 
         totalAmount = totalAmount * (1 + dTax + wTax) * (1 - customer.getDecimal("C_DISCOUNT").doubleValue());
 
-        // output customer identifier (wId, dID, cId), lastname C_LAST, credit C_CREDIT, discount C_DISCOUNT
-        // output W_TAX and D_TAX
-        // output O_ID, O_ENTRY_D
-        // output itemOrders.size(), TOTOAL_AMOUNT
-        // for each itemOrder
-        // output itemId, itemName, warehouseId, quantity, OL_AMOUNT, S_QUANTITY
+        // log
+        System.out.printf(
+                "customer with C_W_ID: %d, C_D_ID: %d, C_ID: %d, C_LAST: %s, C_CREDIT: %s, C_DISCOUNT: %s \n",
+                wId, dId, cId, customer.getString("C_LAST"),
+                customer.getString("C_CREDIT"), customer.getString("C_DISCOUNT"));
+        System.out.printf("Warehouse tax rate: %f, District tax rate: %f \n", wTax, dTax);
+        System.out.printf("Order number: %d, entry date: %s \n", nextOId, curDate);
+        System.out.printf("Number of items: %d, total amount for order: %f ", olCount, totalAmount);
+    }
+
+    private void createNewOrderLine(int wId, int dId, int oId, int olNumber, int iId, String iName,
+                                    double itemAmount, int supplyWId, int quantity, String distInfo) {
+        session.execute(insertOrderLineStmt.bind(
+                wId, dId, oId, olNumber, iId, iName, itemAmount, supplyWId, quantity, distInfo));
+    }
+
+    private String getDistrictStringId(int dId) {
+        if (dId < 10) {
+            return "S_DIST_0" + dId;
+        } else {
+            return "S_DIST_10";
+        }
     }
 
     private Row selectItem(int iId) {
@@ -201,13 +222,13 @@ class OrderTransaction {
         return (!customers.isEmpty()) ? customers.get(0) : null;
     }
 
-    private Row getWTax(int wId) {
+    private Row getWarehouse(int wId) {
         ResultSet resultSet = session.execute(selectWarehouseStmt.bind(wId));
         List<Row> warehouses = resultSet.all();
         return (!warehouses.isEmpty()) ? warehouses.get(0) : null;
     }
 
-    private Row getDTax(int wId, int dId) {
+    private Row getDistrict(int wId, int dId) {
         ResultSet resultSet = session.execute(selectDistrictStmt.bind(wId, dId));
         List<Row> districts = resultSet.all();
         return (!districts.isEmpty()) ? districts.get(0) : null;
