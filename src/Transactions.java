@@ -20,6 +20,7 @@ class Transactions {
     static final String KEY_SPACE = Setup.KEY_SPACE;
 
     private Session session;
+    private OrderTransaction orderTransaction;
     private PaymentTransaction paymentTransaction;
     private DeliveryTransaction deliveryTransaction;
     private OrderStatusTransaction orderStatusTransaction;
@@ -34,6 +35,7 @@ class Transactions {
                 .addContactPoint(CONTACT_POINT)
                 .build();
         session = cluster.connect(KEY_SPACE);
+        orderTransaction = new OrderTransaction(session);
         paymentTransaction = new PaymentTransaction(session);
         deliveryTransaction = new DeliveryTransaction(session);
         orderStatusTransaction = new OrderStatusTransaction(session);
@@ -45,18 +47,8 @@ class Transactions {
 
     /* Start of public methods */
 
-    /**
-     *
-     * @param cId : used for customer identifier
-     * @param wId : used for customer identifier
-     * @param dID : used for customer identifier
-     * @param itemOrders : each item consist of:
-     *                   - item number for item
-     *                   - supplier warehouse for item
-     *                   - quantity ordered for item
-     */
     void processOrder(int cId, int wId, int dID, List<List<Integer>> itemOrders) {
-
+        orderTransaction.processOrder(cId, wId, dID, itemOrders);
     }
 
     void processPayment(int wId, int dId, int cId, float payment) {
@@ -70,7 +62,6 @@ class Transactions {
     void processOrderStatus(int c_W_ID, int c_D_ID, int c_ID){
         orderStatusTransaction.processOrderStatus(c_W_ID, c_D_ID, c_ID);
     }
-
 
     void processStockLevel(int w_ID, int d_ID, int T, int L){
         stockLevelTransaction.processStockLevel(w_ID, d_ID, T, L);
