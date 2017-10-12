@@ -47,10 +47,10 @@ public class PopularItemTransaction {
     PopularItemTransaction(Session session) {
         this.session = session;
         /* popular items */
-        this.selectLastOrdersStmt = session.prepare(SELECT_LAST_ORDERS);
-        this.selectMaxQuantityStmt = session.prepare(SELECT_MAX_QUANTITY);
-        this.selectPopularItemStmt = session.prepare(SELECT_POPULAR_ITEM);
-        this.selectOrderWithItemStmt = session.prepare(SELECT_ORDER_WITH_ITEM);
+        selectLastOrdersStmt = session.prepare(SELECT_LAST_ORDERS);
+        selectMaxQuantityStmt = session.prepare(SELECT_MAX_QUANTITY);
+        selectPopularItemStmt = session.prepare(SELECT_POPULAR_ITEM);
+        selectOrderWithItemStmt = session.prepare(SELECT_ORDER_WITH_ITEM);
     }
 
     /* Start of public methods */
@@ -64,21 +64,28 @@ public class PopularItemTransaction {
 
     void popularItem(int wId, int dId, int numOfOrders) {
         List<Row> lastOrders = selectLastOrders(wId, dId, numOfOrders);
+        int num = lastOrders.size();
 //        List<Row> customers = new List();
-        List<Integer> popularItems = new ArrayList<Integer>();;
-        for (int i = 0; i < numOfOrders; i++) {
+        List<Integer> popularItems = new ArrayList();
+        System.out.println("order ids");
+        for (int i = 0; i < num; i++) {
             int orderId = lastOrders.get(i).getInt("o_id");
+            System.out.println(orderId);
 //            cId = lastOrders.get(i)[1];
 //            customers.add(getCustomer(wId, dId, cId));
             List<Row>popularItem = getPopularItem(wId, dId, orderId);
+            System.out.println("item ids:");
             for (Row item: popularItem) {
-                if (popularItems.contains(item.getInt("ol_i_id"))) {
-                    popularItems.add(item.getInt("ol_i_id"));
+                int itemId = item.getInt("ol_i_id");
+                System.out.println(itemId);
+                if (popularItems.contains(itemId)) {
+                    popularItems.add(itemId);
                 }
             }
         }
         int[] percentage = new int[popularItems.size()];
 //        String[] itemName = new String[popularItems.size()]
+        System.out.println("percentage:");
         for (int i = 0; i < popularItems.size(); i++){
             int itemId = popularItems.get(i);
 //            orderId = lastOrders.get(i)[0];
@@ -131,6 +138,7 @@ public class PopularItemTransaction {
                 count++;
             }
         }
+        System.out.println(count);
         return count;
 
     }
