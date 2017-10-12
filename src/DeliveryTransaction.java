@@ -4,6 +4,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.ResultSet;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -21,7 +22,7 @@ public class DeliveryTransaction {
     private Session session;
 
     private static final String SELECT_SMALLEST_ORDER =
-            "SELECT o_id, o_c_id "
+            "SELECT o_id, o_c_id, o_entry_d "
                     + "FROM orders_by_id "
                     + "WHERE o_w_id = ? AND o_d_id = ? AND o_carrier_id = -1 LIMIT 1 ALLOW FILTERING;";
     private static final String SELECT_ORDER_LINES =
@@ -72,12 +73,10 @@ public class DeliveryTransaction {
             selectSmallestOrder(wId, dId);
             int oId = targetOrder.getInt("o_id");
             int cId = targetOrder.getInt("o_c_id");
-            String o_entry_d = targetOrder.getString("o_entry_d");
-            updateOrderByCarrier(wId, dId, oId, cId, carrierId, o_entry_d);
+            Date o_entry_d = targetOrder.getTimestamp("o_entry_d");
+            updateOrderByCarrier(wId, dId, cId, oId, carrierId, o_entry_d);
 
-            Date date = new Date();
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-            String ol_delivery_d = sdf.format(date);
+            Date ol_delivery_d = new Date();
             BigDecimal olAmountSum = selectAndUpdateOrderLines(wId, dId, oId, ol_delivery_d);
 
             selectCustomer(wId, dId, cId);
@@ -98,7 +97,7 @@ public class DeliveryTransaction {
         }
     }
 
-    private BigDecimal selectAndUpdateOrderLines(final int w_id, final int d_id, final int o_id, final String ol_delivery_d) {
+    private BigDecimal selectAndUpdateOrderLines(final int w_id, final int d_id, final int o_id, final Date ol_delivery_d) {
         ResultSet resultSet = session.execute(selectOrderLinesStmt.bind(w_id, d_id, o_id));
         List<Row> resultRow = resultSet.all();
         BigDecimal sum = new BigDecimal(0.0);
@@ -124,7 +123,7 @@ public class DeliveryTransaction {
         }
     }
 
-    private void updateOrderByCarrier(final int w_id, final int d_id, final int c_id, final int o_id, final int carrier_id, final String o_entry_d) {
+    private void updateOrderByCarrier(final int w_id, final int d_id, final int c_id, final int o_id, final int carrier_id, final Date o_entry_d) {
         session.execute(updateOrderByIdStmt.bind(carrier_id, w_id, d_id, o_id, c_id));
         session.execute(updateOrderByTimestampStmt.bind(carrier_id, w_id, d_id, o_entry_d, o_id, c_id));
     }

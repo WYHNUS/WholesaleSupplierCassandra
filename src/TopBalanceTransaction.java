@@ -37,7 +37,7 @@ public class TopBalanceTransaction {
         ResultSet resultSet = session.execute(selectTopBalanceStmt.bind());
         List<Row> topCustomers = resultSet.all();
         for(Row cus: topCustomers){
-            System.out.println(cus.getString("c_id"));
+            System.out.println(cus.getInt("c_id"));
         }
         //outputTopBalance(topCustomers);
 

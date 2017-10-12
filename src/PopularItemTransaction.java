@@ -3,6 +3,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -30,19 +31,19 @@ public class PopularItemTransaction {
             "SELECT o_id, o_c_id, o_entry_d, o_c_first, o_c_middle, o_c_last "
                     + "FROM orders_by_timestamp "
                     + "WHERE o_w_id = ? AND o_d_id = ? "
-                    + "LIMIT ?;";
+                    + "LIMIT ? ALLOW FILTERING;";
     private static final String SELECT_MAX_QUANTITY =
-            "SELECT MAX(ol_quantity) "
-                    + "FROM orders_lines "
+            "SELECT MAX(ol_quantity) as ol_quantity "
+                    + "FROM order_lines "
                     + "WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ?;";
     private static final String SELECT_POPULAR_ITEM =
             "SELECT ol_i_id, ol_i_name "
-                    + "FROM orders_lines "
-                    + "WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? AND ol_quantity = ?;";
+                    + "FROM order_lines "
+                    + "WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? AND ol_quantity = ? ALLOW FILTERING;";
     private static final String SELECT_ORDER_WITH_ITEM =
             "SELECT * "
-                    + "FROM orders_lines "
-                    + "WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? AND ol_i_id = ?;";
+                    + "FROM order_lines "
+                    + "WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? AND ol_i_id = ? ALLOW FILTERING;";
 
     PopularItemTransaction(Session session) {
         this.session = session;
@@ -67,27 +68,24 @@ public class PopularItemTransaction {
         int num = lastOrders.size();
 //        List<Row> customers = new List();
         List<Integer> popularItems = new ArrayList();
-        List<String> popularItemNames = new ArrayList();
-        System.out.println("order ids");
         for (int i = 0; i < num; i++) {
             int orderId = lastOrders.get(i).getInt("o_id");
-            System.out.println(orderId);
+            //System.out.println("order ids " + orderId);
 //            cId = lastOrders.get(i)[1];
 //            customers.add(getCustomer(wId, dId, cId));
             List<Row>popularItem = getPopularItem(wId, dId, orderId);
-            System.out.println("item ids:");
+            //System.out.println("item ids:");
             for (Row item: popularItem) {
                 int itemId = item.getInt("ol_i_id");
-                System.out.println(itemId);
-                if (popularItems.contains(itemId)) {
+                //System.out.println("itemId " + itemId);
+                if (!popularItems.contains(itemId)) {
                     popularItems.add(itemId);
-                    popularItemNames.add(item.getString("ol_i_name"));
                 }
             }
         }
         int[] percentage = new int[popularItems.size()];
 //        String[] itemName = new String[popularItems.size()]
-        System.out.println("percentage:");
+        //System.out.println("percentage: " + popularItems.size());
         for (int i = 0; i < popularItems.size(); i++){
             int itemId = popularItems.get(i);
 //            orderId = lastOrders.get(i)[0];
@@ -117,7 +115,7 @@ public class PopularItemTransaction {
 
     private List<Row> getPopularItem(final int wId, final int dId, final int orderId) {
         ResultSet resultSet1 = session.execute(selectMaxQuantityStmt.bind(wId, dId, orderId));
-        int maxQuantity= (resultSet1.all()).get(0).getInt("ol_quantity");
+        BigDecimal maxQuantity= (resultSet1.all()).get(0).getDecimal("ol_quantity");
 
         ResultSet resultSet2 = session.execute(selectPopularItemStmt.bind(wId, dId, orderId, maxQuantity));
         List<Row> popularItem = resultSet2.all();
@@ -140,7 +138,8 @@ public class PopularItemTransaction {
                 count++;
             }
         }
-        System.out.println(count);
+        //System.out.println("getPercentage");
+        //System.out.println(count);
         return count;
 
     }
