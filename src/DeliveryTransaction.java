@@ -78,7 +78,6 @@ public class DeliveryTransaction {
 
             Date ol_delivery_d = new Date();
             BigDecimal olAmountSum = selectAndUpdateOrderLines(wId, dId, oId, ol_delivery_d);
-
             selectCustomer(wId, dId, cId);
             updateCustomerByDelivery(wId, dId, cId, olAmountSum, carrierId);
         }
@@ -100,14 +99,14 @@ public class DeliveryTransaction {
     private BigDecimal selectAndUpdateOrderLines(final int w_id, final int d_id, final int o_id, final Date ol_delivery_d) {
         ResultSet resultSet = session.execute(selectOrderLinesStmt.bind(w_id, d_id, o_id));
         List<Row> resultRow = resultSet.all();
-        BigDecimal sum = new BigDecimal(0.0);
+        BigDecimal sum = new BigDecimal(0);
 
         for (int i=0; i<resultRow.size(); i++) {
             Row orderLine = resultRow.get(i);
             BigDecimal partial_sum = orderLine.getDecimal("ol_amount");
             int ol_number = orderLine.getInt("ol_number");
 
-            sum.add(partial_sum);
+            sum = sum.add(partial_sum);
             session.execute(updateOrderLineStmt.bind(ol_delivery_d, w_id, d_id, o_id, ol_number));
         }
 

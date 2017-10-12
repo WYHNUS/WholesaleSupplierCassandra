@@ -3,6 +3,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -33,7 +34,7 @@ class OrderTransaction {
                     + " FROM customers "
                     + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?; ";
     private static final String SELECT_STOCK =
-            " SELECT S_QUANTITY, S_YTD, S_ORDER_CNT, S_REMOTE_CNT "
+            " SELECT * "
                     + " FROM stocks "
                     + " WHERE S_W_ID = ? AND S_I_ID = ?; ";
     private static final String SELECT_ITEM =
@@ -108,11 +109,11 @@ class OrderTransaction {
 
         // let O_ENTRY_D = current date and time
         Date curDate = new Date();
-        int olCount = itemOrders.size();
-        int allLocal = 1;
+        BigDecimal olCount = new BigDecimal(itemOrders.size());
+        BigDecimal allLocal = new BigDecimal(1);
         for (List<Integer> order : itemOrders) {
             if (order.get(1) != wId) {
-                allLocal = 0;
+                allLocal = new BigDecimal(0);
             }
         }
 
@@ -122,18 +123,19 @@ class OrderTransaction {
 
         double totalAmount= 0;
         for (int i = 0; i < itemOrders.size(); i++) {
-            int iId = itemOrders.get(0).get(0);
-            int iWId = itemOrders.get(0).get(1);
-            int quantity = itemOrders.get(0).get(2);
+            int iId = itemOrders.get(i).get(0);
+            int iWId = itemOrders.get(i).get(1);
+            int quantity = itemOrders.get(i).get(2);
 
             Row stock = selectStock(iWId, iId);
             double adjQuantity = stock.getDecimal("S_QUANTITY").doubleValue() - quantity;
             while (adjQuantity < 10) {
                 adjQuantity += 100;
             }
+            BigDecimal adjQuantityDecimal = new BigDecimal(adjQuantity);
 
-            updateStock(iWId, iId, adjQuantity,
-                    stock.getDecimal("S_YTD").doubleValue() + quantity,
+            updateStock(iWId, iId, adjQuantityDecimal,
+                    stock.getDecimal("S_YTD").add(new BigDecimal(quantity)),
                     stock.getInt("S_ORDER_CNT") + 1,
                     (iWId != wId)
                             ? stock.getInt("S_REMOTE_CNT") + 1
@@ -141,10 +143,10 @@ class OrderTransaction {
 
             Row item = selectItem(iId);
             String itemName = item.getString("I_NAME");
-            double itemAmount = quantity * item.getInt("I_PRICE");
-            totalAmount += itemAmount;
+            BigDecimal itemAmount = item.getDecimal("I_PRICE").multiply(new BigDecimal(quantity));
+            totalAmount += itemAmount.doubleValue();
             createNewOrderLine(wId, dId, nextOId, i, iId, itemName,
-                    itemAmount, quantity, iWId, stock.getString(getDistrictStringId(dId)));
+                    itemAmount, iWId, new BigDecimal(quantity), stock.getString(getDistrictStringId(dId)));
 
             // log
             System.out.printf(
@@ -158,14 +160,14 @@ class OrderTransaction {
         System.out.printf(
                 "customer with C_W_ID: %d, C_D_ID: %d, C_ID: %d, C_LAST: %s, C_CREDIT: %s, C_DISCOUNT: %s \n",
                 wId, dId, cId, customer.getString("C_LAST"),
-                customer.getString("C_CREDIT"), customer.getString("C_DISCOUNT"));
+                customer.getString("C_CREDIT"), customer.getDecimal("C_DISCOUNT"));
         System.out.printf("Warehouse tax rate: %f, District tax rate: %f \n", wTax, dTax);
         System.out.printf("Order number: %d, entry date: %s \n", nextOId, curDate);
-        System.out.printf("Number of items: %d, total amount for order: %f ", olCount, totalAmount);
+        System.out.printf("Number of items: %d, total amount for order: %f ", olCount.intValue(), totalAmount);
     }
 
     private void createNewOrderLine(int wId, int dId, int oId, int olNumber, int iId, String iName,
-                                    double itemAmount, int supplyWId, int quantity, String distInfo) {
+                                    BigDecimal itemAmount, int supplyWId, BigDecimal quantity, String distInfo) {
         session.execute(insertOrderLineStmt.bind(
                 wId, dId, oId, olNumber, iId, iName, itemAmount, supplyWId, quantity, distInfo));
     }
@@ -184,8 +186,8 @@ class OrderTransaction {
         return (!items.isEmpty()) ? items.get(0) : null;
     }
 
-    private void updateStock(Integer wId, Integer iId, double adjQuantity,
-                             double ytd, int orderCount, int remoteCount) {
+    private void updateStock(Integer wId, Integer iId, BigDecimal adjQuantity,
+                             BigDecimal ytd, int orderCount, int remoteCount) {
         session.execute(updateStockStmt.bind(
                 adjQuantity, ytd, orderCount, remoteCount, wId, iId));
     }
@@ -202,7 +204,7 @@ class OrderTransaction {
                 nextOId, curDate, null, wId, dId, cId));
     }
 
-    private void createNewOrder(int id, int dId, int wId, int cId, Date entryDate, int olCount, int allLocal,
+    private void createNewOrder(int id, int dId, int wId, int cId, Date entryDate, BigDecimal olCount, BigDecimal allLocal,
                                 String cFirst, String cMiddle, String cLast) {
         session.execute(insertOrderByTimestampStmt.bind(
                 wId, dId, entryDate, id, cId, null, olCount, allLocal,
