@@ -26,7 +26,7 @@ class Transactions {
     private OrderStatusTransaction orderStatusTransaction;
     private StockLevelTransaction stockLevelTransaction;
     private PopularItemTransaction popularItemTransaction;
-    //private TopBalanceTransaction topBalanceTransaction;
+    private TopBalanceTransaction topBalanceTransaction;
 
 
 
@@ -41,7 +41,7 @@ class Transactions {
         orderStatusTransaction = new OrderStatusTransaction(session);
         stockLevelTransaction = new StockLevelTransaction(session);
         popularItemTransaction = new PopularItemTransaction(session) ;
-        //topBalanceTransaction = new TopBalanceTransaction(session);
+        topBalanceTransaction = new TopBalanceTransaction(session);
 
     }
 
@@ -71,7 +71,5 @@ class Transactions {
         popularItemTransaction.popularItem(wId, dId, numOfOrders);
     }
 
-//    void topBalance() {
-//        topBalanceTransaction.topBalance();
-//    }
+    void topBalance() { topBalanceTransaction.topBalance(); }
 }

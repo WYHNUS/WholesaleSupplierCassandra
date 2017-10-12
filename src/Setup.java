@@ -373,7 +373,7 @@ class Setup {
                 int orderId = Integer.parseInt(lineData[2]);
                 int customerId = Integer.parseInt(lineData[3]);
                 Date entryDate = DF.parse(lineData[7]);
-                int carrierId = -1;
+                int carrierId = -1; // default value -1 to indicate null
                 if (!lineData[4].equals("null")) {
                     carrierId = Integer.parseInt(lineData[4]);
                 }
@@ -390,11 +390,9 @@ class Setup {
                         .setEntryDate(entryDate)
                         .setId(orderId)
                         .setCId(customerId)
+                        .setCarrierId(carrierId)
                         .setOlCnt(new BigDecimal(lineData[5]))
                         .setAllLocal(new BigDecimal(lineData[6]));
-                if (!lineData[4].equals("null")) {
-                    curOrder.setCarrierId(carrierId);
-                }
                 orderSet.add(curOrder);
             }
             System.out.println("Successfully loaded all data from order file.");
@@ -446,12 +444,6 @@ class Setup {
                         order.wId, order.dId, order.id, order.cId,
                         order.entryDate, order.carrierId, order.olCnt, order.allLocal,
                         triple.first, triple.second, triple.third);
-
-                if (order.carrierId == -1) {
-                     // don't set O_CARRIER_ID if null
-                    boundByTimestamp.unset(5);
-                    boundById.unset(5);
-                }
 
                 session.execute(boundByTimestamp);
                 session.execute(boundById);
