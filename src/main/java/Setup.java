@@ -16,8 +16,38 @@ import java.util.*;
  * Bulk load data from .csv files.
  */
 class Setup {
-    static final String CONTACT_POINT = "127.0.0.1";
-    static final String KEY_SPACE = "wholesale_supplier";
+    static final String CONTACT_POINT;
+    static final String KEY_SPACE;
+
+    private static final String CONTACT_POINT_KEY = "CONTACT_POINT";
+    private static final String KEY_SPACE_KEY = "KEY_SPACE";
+
+    static {
+        Map<String, String> configMap = new HashMap<>();
+        String line;
+        try {
+            FileReader fr = new FileReader(".env");
+            BufferedReader bf = new BufferedReader(fr);
+
+            while ((line = bf.readLine()) != null) {
+                String[] lineData =line.split("=");
+                switch (lineData[0]) {
+                    case CONTACT_POINT_KEY:
+                        configMap.put(CONTACT_POINT_KEY, lineData[1].trim());
+                        break;
+                    case KEY_SPACE_KEY:
+                        configMap.put(KEY_SPACE_KEY, lineData[1].trim());
+                        break;
+                    default:
+                        // do nothing
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("An error occurred while read in env file.");
+        }
+        CONTACT_POINT = configMap.get(CONTACT_POINT_KEY);
+        KEY_SPACE = configMap.get(KEY_SPACE_KEY);
+    }
 
     private static final DateFormat DF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 

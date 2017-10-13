@@ -30,8 +30,6 @@ class Transactions {
     private PopularItemTransaction popularItemTransaction;
     private TopBalanceTransaction topBalanceTransaction;
 
-
-
     Transactions() {
         Cluster cluster = Cluster.builder()
                 .addContactPoint(CONTACT_POINT)

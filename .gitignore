@@ -1,6 +1,8 @@
 .DS_Store
 .idea/*
+*.iml
 out/*
 target/*
-*.iml
+
 data/*.csv
+.env

@@ -30,7 +30,8 @@ and ensure `mvn --version` command works
 
 3. Start cassandra on local machine: `<path to cassandra folder>/cassandra -f`
 
-4. In `/src/main/java/Setup.java` update variable values for `CONTACT_POINT` and `KEY_SPACE` 
+4. Make a copy of `.env.example` file and rename it to `.env`, 
+add in values for `CONTACT_POINT` and `KEY_SPACE` in `.env` file _(for example, 127.0.0.1 and wholesale_supplier)_,
 to accommodate to your machine environment.
 
 5. Create a `data` folder under the root directory if not present, 
