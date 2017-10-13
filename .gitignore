@@ -4,5 +4,7 @@
 out/*
 target/*
 
-data/*.csv
+data/*
+xact/*
+*.txt
 .env
