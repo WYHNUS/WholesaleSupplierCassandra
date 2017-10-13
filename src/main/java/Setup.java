@@ -16,10 +16,10 @@ import java.util.*;
  * Bulk load data from .csv files.
  */
 class Setup {
-    static final String CONTACT_POINT;
+    static final String[] CONTACT_POINTS;
     static final String KEY_SPACE;
 
-    private static final String CONTACT_POINT_KEY = "CONTACT_POINT";
+    private static final String CONTACT_POINT_KEY = "CONTACT_POINTS";
     private static final String KEY_SPACE_KEY = "KEY_SPACE";
 
     static {
@@ -45,7 +45,11 @@ class Setup {
         } catch (IOException e) {
             System.out.println("An error occurred while read in env file.");
         }
-        CONTACT_POINT = configMap.get(CONTACT_POINT_KEY);
+        String[] trimedIP = configMap.get(CONTACT_POINT_KEY).split(",");
+        for (int i = 0; i < trimedIP.length; i++) {
+            trimedIP[i] = trimedIP[i].trim();
+        }
+        CONTACT_POINTS = trimedIP;
         KEY_SPACE = configMap.get(KEY_SPACE_KEY);
     }
 
@@ -60,7 +64,7 @@ class Setup {
 
     private void run() {
         Cluster cluster = Cluster.builder()
-                .addContactPoint(CONTACT_POINT)
+                .addContactPoints(CONTACT_POINTS)
                 .build();
         session = cluster.connect();
 

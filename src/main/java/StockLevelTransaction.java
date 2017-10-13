@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class StockLevelTransaction {
-    static final String CONTACT_POINT = Setup.CONTACT_POINT;
     static final String KEY_SPACE = Setup.KEY_SPACE;
 
     private Session session;

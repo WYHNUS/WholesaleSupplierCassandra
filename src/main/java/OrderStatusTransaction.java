@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 public class OrderStatusTransaction {
-    static final String CONTACT_POINT = Setup.CONTACT_POINT;
     static final String KEY_SPACE = Setup.KEY_SPACE;
 
     private Session session;
@@ -18,8 +17,6 @@ public class OrderStatusTransaction {
     }
 
     void processOrderStatus(int c_W_ID, int c_D_ID, int c_ID) {
-
-
         //get customer's name and
         String getCustomerName = "SELECT C_FIRST, C_MIDDLE, C_LAST, C_BALANCE, C_LASR_ORDER, C_ENTRY_D, C_CARRIER_ID FROM " + KEY_SPACE + ".customers " +
                 "WHERE C_W_ID = " + c_W_ID + " AND C_D_ID = " + c_D_ID + " AND C_ID = " + c_ID;
@@ -41,7 +38,6 @@ public class OrderStatusTransaction {
         System.out.println("Last order carrier identifier is: " + carrier_id + ".");
         System.out.println("=======Item Info is below.======");
 
-
         //for each item in the last order
         String getCustomerLastOLNumber =  "SELECT OL_NUMBER FROM " + KEY_SPACE + ".order_lines " +
                 "WHERE OL_W_ID = " + c_W_ID + " AND OL_D_ID = " + c_D_ID + " AND OL_O_ID = " + last_order;
@@ -59,7 +55,6 @@ public class OrderStatusTransaction {
         BigDecimal quantity;
         BigDecimal amount;
         Date deliveryData;
-
 
         for (Row row : row2) {
             int OL_NUMBER = row.getInt("OL_NUMBER");
@@ -88,9 +83,6 @@ public class OrderStatusTransaction {
             System.out.println("Total price for ordered item: " + amount);
             System.out.println("Data and time of delivery: " + deliveryData);
             System.out.println("\n\n");
-
-
         }
-
     }
 }

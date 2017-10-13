@@ -22,10 +22,12 @@ import java.util.concurrent.*;
  */
 class ClientThread implements Callable<Triple<Integer, Long, Double>> {
     private int index;
+    private String consistencyLevel;
     private Transactions transaction;
 
-    ClientThread(int index) {
+    ClientThread(int index, String consistencyLevel) {
         this.index = index;
+        this.consistencyLevel = consistencyLevel;
     }
 
     private long readTransaction(Scanner sc) {
@@ -97,9 +99,7 @@ class ClientThread implements Callable<Triple<Integer, Long, Double>> {
 
     @Override
     public Triple<Integer, Long, Double> call() throws Exception {
-        // todo: change transaction initialization node
-        this.transaction = new Transactions();
-
+        this.transaction = new Transactions(this.index, this.consistencyLevel);
         // anti-pattern here, but too lazy to replace with Optional ... :)
         Triple<Integer, Long, Double> result = null;
 
@@ -134,7 +134,17 @@ class ClientThread implements Callable<Triple<Integer, Long, Double>> {
 public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
+        System.out.println("Please enter number of clients "
+                + "(no larger than number of files in xact folder): ");
         int clientCount = sc.nextInt();
+        System.out.println("Please select read and write consistency level parameters "
+                + "(\"ONE\" or \"QUORUM\"): ");
+        String consistencyLevel = sc.next();
+        if (!consistencyLevel.equalsIgnoreCase("ONE")
+                && !consistencyLevel.equalsIgnoreCase("QUORUM") ) {
+            System.out.println("Invalid consistency level. "
+                    + "The developers are unhappy, hence program terminates.");
+        }
         sc.close();
 
         // not sure if this is what we want, but Runtime.getRuntime().availableProcessors() doesn't satisfy requirement
@@ -144,11 +154,11 @@ public class Main {
 
         if (clientCount <= 0) {
             // read from command line
-            executor.submit(new ClientThread(0));
+            executor.submit(new ClientThread(0, consistencyLevel));
         } else {
             // read from xact files
             for (int i = 1; i <= clientCount; i++) {
-                Future<Triple<Integer, Long, Double>> future = executor.submit(new ClientThread(i));
+                Future<Triple<Integer, Long, Double>> future = executor.submit(new ClientThread(i, consistencyLevel));
                 futureMeasurements.add(future);
             }
         }
@@ -161,11 +171,19 @@ public class Main {
                 measurementMap.put(tuple.first, tuple);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
+                // no point to output performance result if error occurs
+                return;
             }
         }
 
-        // output performance result
+        outputPerformanceResult(measurementMap);
+    }
+
+    // output performance result
+    private static void outputPerformanceResult(Map<Integer, Triple<Integer, Long, Double>> measurementMap) {
+        int clientCount = measurementMap.size();
         String outFilePath = "performanceMeasurement.txt";
+
         try {
             PrintWriter out = new PrintWriter(outFilePath);
 

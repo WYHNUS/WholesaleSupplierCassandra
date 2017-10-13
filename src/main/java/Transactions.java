@@ -18,7 +18,7 @@ import java.util.List;
  * 7. Top-Balance Transaction identifies the top-10 customers with the highest outstanding payment balance.
  */
 class Transactions {
-    static final String CONTACT_POINT = Setup.CONTACT_POINT;
+    static final String[] CONTACT_POINTS = Setup.CONTACT_POINTS;
     static final String KEY_SPACE = Setup.KEY_SPACE;
 
     private Session session;
@@ -30,9 +30,10 @@ class Transactions {
     private PopularItemTransaction popularItemTransaction;
     private TopBalanceTransaction topBalanceTransaction;
 
-    Transactions() {
+    Transactions(int index, String consistencyLevel) {
+        // todo: set consistency level parameter using input and set replication factor to 3
         Cluster cluster = Cluster.builder()
-                .addContactPoint(CONTACT_POINT)
+                .addContactPoint(CONTACT_POINTS[index % 5 + 1])
                 .build();
         session = cluster.connect(KEY_SPACE);
         orderTransaction = new OrderTransaction(session);
