@@ -47,7 +47,7 @@ class OrderTransaction {
                     + " WHERE D_W_ID = ? AND D_ID = ?; ";
     private static final String UPDATE_CUSTOMER_ORDER =
             " UPDATE customers "
-                    + " SET C_LASR_ORDER = ?, C_ENTRY_D = ?, C_CARRIER_ID = ? "
+                    + " SET C_LAST_ORDER = ?, C_ENTRY_D = ?, C_CARRIER_ID = ? "
                     + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?; ";
     private static final String UPDATE_STOCK =
             " UPDATE stocks "
