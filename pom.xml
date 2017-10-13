@@ -22,7 +22,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.example.cs4224.Setup</mainClass>
+                            <mainClass>com.example.cs4224.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -37,5 +37,4 @@
             <version>3.3.0</version>
         </dependency>
     </dependencies>
-    
 </project>

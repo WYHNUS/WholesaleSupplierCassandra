@@ -1,3 +1,5 @@
+package main.java;
+
 import com.datastax.driver.core.*;
 
 import java.io.BufferedReader;
