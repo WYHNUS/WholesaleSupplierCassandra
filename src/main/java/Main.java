@@ -177,6 +177,7 @@ public class Main {
         }
 
         outputPerformanceResult(measurementMap);
+        System.out.println("\nAll client have completed their transactions.");
     }
 
     // output performance result

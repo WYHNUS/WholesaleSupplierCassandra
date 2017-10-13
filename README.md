@@ -23,22 +23,23 @@ and ensure `mvn --version` command works
 
 1. Start cassandra on local machine: `<path to cassandra folder>/cassandra -f`
 
-2. Make a copy of `.env.example` file and rename it to `.env`, 
-add in values for `CONTACT_POINTS` _(if multiple nodes are used, 
-separate them with comma)_ and `KEY_SPACE` in `.env` file 
-_(for example, 1.2.3.4,1.2.3.5 and wholesale_supplier)_,
+2. Make a copy of `.env.example` file and rename it to `.env`.
+ 
+3. For `.env` file, add in values for `CONTACT_POINTS` 
+_(if multiple nodes are used, separate them with comma)_ 
+and `KEY_SPACE` in `.env` file  _(for example, 1.2.3.4,1.2.3.5 and wholesale_supplier)_,
 to accommodate to your machine environment.
 
-3. Create a `data` folder under the root directory if not present, 
+4. Create a `data` folder under the root directory if not present, 
 put all bootstrap data files in `.csv` format into `data` folder.
 
-4. Create a `xact` folder under the root directory if not present, 
+5. Create a `xact` folder under the root directory if not present, 
 put all pre-defined xact files in `.txt` format into `xact` folder.
 
-5. In project root folder, compile the project via 
+6. In project root folder, compile the project via 
 `mvn clean dependency:copy-dependencies package`
 
-6. Run `java -cp target/*:target/dependency/*:. main.java.Setup` once 
+7. Run `java -cp target/*:target/dependency/*:. main.java.Setup` once 
 to create key space and schemas used in this project. 
 Meanwhile, all bootstrap data will be loaded into the local machine.
 

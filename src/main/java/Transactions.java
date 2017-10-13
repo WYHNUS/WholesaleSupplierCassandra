@@ -36,6 +36,7 @@ class Transactions {
                 .addContactPoint(CONTACT_POINTS[index % 5 + 1])
                 .build();
         session = cluster.connect(KEY_SPACE);
+
         orderTransaction = new OrderTransaction(session);
         paymentTransaction = new PaymentTransaction(session);
         deliveryTransaction = new DeliveryTransaction(session);
@@ -43,7 +44,6 @@ class Transactions {
         stockLevelTransaction = new StockLevelTransaction(session);
         popularItemTransaction = new PopularItemTransaction(session) ;
         topBalanceTransaction = new TopBalanceTransaction(session);
-
     }
 
     /* Start of public methods */
