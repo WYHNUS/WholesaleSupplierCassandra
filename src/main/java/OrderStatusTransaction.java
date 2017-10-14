@@ -18,7 +18,7 @@ public class OrderStatusTransaction {
 
     void processOrderStatus(int c_W_ID, int c_D_ID, int c_ID) {
         //get customer's name and
-        String getCustomerName = "SELECT C_FIRST, C_MIDDLE, C_LAST, C_BALANCE, C_LASR_ORDER, C_ENTRY_D, C_CARRIER_ID FROM " + KEY_SPACE + ".customers " +
+        String getCustomerName = "SELECT C_FIRST, C_MIDDLE, C_LAST, C_BALANCE, C_LAST_ORDER, C_ENTRY_D, C_CARRIER_ID FROM " + KEY_SPACE + ".customers " +
                 "WHERE C_W_ID = " + c_W_ID + " AND C_D_ID = " + c_D_ID + " AND C_ID = " + c_ID;
         Row row1 = session.execute(getCustomerName).one();
 
@@ -26,7 +26,7 @@ public class OrderStatusTransaction {
         String middleName = row1.getString("C_MIDDLE");
         String lastName = row1.getString("C_LAST");
         BigDecimal balance = row1.getDecimal("C_BALANCE");
-        int last_order = row1.getInt("C_LASR_ORDER");
+        int last_order = row1.getInt("C_LAST_ORDER");
         Date entry_d = row1.getTimestamp("C_ENTRY_D");
         int carrier_id = row1.getInt("C_CARRIER_ID");
 
