@@ -37,7 +37,7 @@ class Transactions {
         session = cluster.connect(KEY_SPACE);
 
         // set consistency level
-        String setConsistencyCmd = "CONSISTENCY " + consistencyLevel;
+        String setConsistencyCmd = "CONSISTENCY " + consistencyLevel + ";";
         session.execute(setConsistencyCmd);
 
         orderTransaction = new OrderTransaction(session);
