@@ -84,7 +84,7 @@ class Setup {
         String createKeySpaceCmd = "CREATE KEYSPACE " + KEY_SPACE
                 + " WITH replication = {"
                 + " 'class' : " + "'SimpleStrategy'" + ","
-                + " 'replication_factor' : " + "1" + "};";
+                + " 'replication_factor' : " + "3" + "};";
         session.execute(createKeySpaceCmd);
         System.out.println("Successfully created keyspace : " + KEY_SPACE);
     }
