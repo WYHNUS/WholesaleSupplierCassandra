@@ -31,11 +31,14 @@ class Transactions {
     private TopBalanceTransaction topBalanceTransaction;
 
     Transactions(int index, String consistencyLevel) {
-        // todo: set consistency level parameter using input and set replication factor to 3
         Cluster cluster = Cluster.builder()
                 .addContactPoint(CONTACT_POINTS[index % 5 + 1])
                 .build();
         session = cluster.connect(KEY_SPACE);
+
+        // set consistency level
+        String setConsistencyCmd = "CONSISTENCY " + consistencyLevel;
+        session.execute(setConsistencyCmd);
 
         orderTransaction = new OrderTransaction(session);
         paymentTransaction = new PaymentTransaction(session);
