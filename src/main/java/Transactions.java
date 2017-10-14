@@ -32,7 +32,7 @@ class Transactions {
 
     Transactions(int index, String consistencyLevel) {
         Cluster cluster = Cluster.builder()
-                .addContactPoint(CONTACT_POINTS[index % 5 + 1])
+                .addContactPoint(CONTACT_POINTS[index % 5])
                 .build();
         session = cluster.connect(KEY_SPACE);
 
