@@ -23,11 +23,11 @@ and ensure `mvn --version` command works
 
 1. Start cassandra on local machine: `<path to cassandra folder>/cassandra -f`
 
-2. Make a copy of `.env.example` file and rename it to `.env`.
+2. Make a copy of `.env.example` file and rename it to `config.env`.
  
 3. For `.env` file, add in values for `CONTACT_POINTS` 
-_(if multiple nodes are used, separate them with comma)_ 
-and `KEY_SPACE` in `.env` file  _(for example, 1.2.3.4,1.2.3.5 and wholesale_supplier)_,
+_(if multiple nodes are used, separate them with comma for example: 1.2.3.4,1.2.3.5 )_
+and `KEY_SPACE` in `.env` file  _(for example: wholesale_supplier)_,
 to accommodate to your machine environment.
 
 4. Create a `data` folder under the root directory if not present, 

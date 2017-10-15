@@ -99,8 +99,8 @@ public class PopularItemTransaction {
 //            itemName[i] = getItemName(itemId);
             percentage[i] = getPercentage(wId, dId, lastOrders, itemId);
         }
-        //outputPopularItems(wId, dId, numOfOrders, lastOrders, popularItemOfOrder,
-        //        popularItemName, percentage);
+        outputPopularItems(wId, dId, numOfOrders, lastOrders, popularItemOfOrder,
+                popularItemName, percentage);
     }
 
 

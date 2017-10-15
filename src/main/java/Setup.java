@@ -26,7 +26,7 @@ class Setup {
         Map<String, String> configMap = new HashMap<>();
         String line;
         try {
-            FileReader fr = new FileReader(".env");
+            FileReader fr = new FileReader("config.env");
             BufferedReader bf = new BufferedReader(fr);
 
             while ((line = bf.readLine()) != null) {

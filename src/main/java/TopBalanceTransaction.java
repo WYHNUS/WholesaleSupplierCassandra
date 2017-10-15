@@ -52,7 +52,7 @@ public class TopBalanceTransaction {
             Row cusN = (customerName.all()).get(0);
             customerNames.add(cusN);
         }
-        //outputTopBalance(topCustomers, customerNames);
+        outputTopBalance(topCustomers, customerNames);
     }
 
     /*  End of public methods */
