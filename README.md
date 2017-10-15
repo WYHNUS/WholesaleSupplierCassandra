@@ -39,14 +39,14 @@ put all pre-defined xact files in `.txt` format into `xact` folder.
 6. In project root folder, compile the project via 
 `mvn clean dependency:copy-dependencies package`
 
-7. Run `java -cp target/*:target/dependency/*:. main.java.Setup` once 
+7. Run `java -Xms2g -Xmx2g -cp target/*:target/dependency/*:. main.java.Setup` once 
 to create key space and schemas used in this project. 
 Meanwhile, all bootstrap data will be loaded into the local machine.
 
 ### Exectution
 
 1. After following above setup steps, execute the main class for the project via 
-`java -cp target/*:target/dependency/*:. main.java.Main`
+`java -Xms2g -Xmx2g -cp target/*:target/dependency/*:. main.java.Main`
 
 2. After the program is started, follow instruction and enter number of clients
 and read and write consistency level parameters.
