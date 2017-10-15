@@ -6,6 +6,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Implementation of seven transaction types:
@@ -22,6 +23,7 @@ import java.util.List;
 public class TopBalanceTransaction {
     /* popular items */
     private PreparedStatement selectTopBalanceStmt;
+    private PreparedStatement selectCustomerNameStmt;
 
     private Session session;
 
@@ -29,25 +31,41 @@ public class TopBalanceTransaction {
             "SELECT * "
                     + "FROM customers_balances "
                     + "LIMIT 10;";
+    private static final String SELECT_CUSTOMER_NAME =
+            "SELECT c_first, c_middle, c_last "
+                    + "FROM customers "
+                    + "WHERE c_w_id=? AND c_d_id=? AND c_id = ?;";
     TopBalanceTransaction(Session session) {
         this.session = session;
         selectTopBalanceStmt = session.prepare(SELECT_TOP_BALANCE);
+        selectCustomerNameStmt = session.prepare(SELECT_CUSTOMER_NAME);
     }
 
     /* Start of public methods */
     void topBalance() {
         ResultSet resultSet = session.execute(selectTopBalanceStmt.bind());
         List<Row> topCustomers = resultSet.all();
+        List<Row> customerNames = new ArrayList();
         for(Row cus: topCustomers){
-            System.out.println(cus.getInt("c_id"));
+            ResultSet customerName = session.execute(selectCustomerNameStmt.bind(cus.getInt("c_w_id"),
+                    cus.getInt("c_d_id"), cus.getInt("c_id")));
+            Row cusN = (customerName.all()).get(0);
+            customerNames.add(cusN);
         }
-        //outputTopBalance(topCustomers);
-
+        //outputTopBalance(topCustomers, customerNames);
     }
 
     /*  End of public methods */
 
-    private void outputTopBalance(){
+    private void outputTopBalance(List<Row> topCustomers, List<Row> customerNames){
+        for (int i=0; i<10; i++){
+            Row cusName = customerNames.get(i);
+            System.out.println("customer name: " + cusName.getString("c_first") + " "
+                    + cusName.getString("c_middle") + " " + cusName.getString("c_last"));
+            Row cus = topCustomers.get(i);
+            System.out.println("customer balance: " + (cus.getDecimal("c_balance")).intValue());
+            System.out.println("WId: " + cus.getInt("c_w_id") + " DId: " + cus.getInt("c_d_id"));
+        }
     }
 
     /*  End of private methods */

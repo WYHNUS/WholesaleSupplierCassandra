@@ -8,6 +8,7 @@ import com.datastax.driver.core.Session;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.ArrayList;
+import java.text.SimpleDateFormat;
 
 /**
  * Implementation of seven transaction types:
@@ -39,7 +40,7 @@ public class PopularItemTransaction {
                     + "FROM order_lines "
                     + "WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ?;";
     private static final String SELECT_POPULAR_ITEM =
-            "SELECT ol_i_id, ol_i_name "
+            "SELECT ol_i_id, ol_i_name, ol_quantity "
                     + "FROM order_lines "
                     + "WHERE ol_w_id = ? AND ol_d_id = ? AND ol_o_id = ? AND ol_quantity = ? ALLOW FILTERING;";
     private static final String SELECT_ORDER_WITH_ITEM =
@@ -69,19 +70,23 @@ public class PopularItemTransaction {
         List<Row> lastOrders = selectLastOrders(wId, dId, numOfOrders);
         int num = lastOrders.size();
 //        List<Row> customers = new List();
+        List<List<Row>> popularItemOfOrder = new ArrayList();
         List<Integer> popularItems = new ArrayList();
+        List<String> popularItemName = new ArrayList();
         for (int i = 0; i < num; i++) {
             int orderId = lastOrders.get(i).getInt("o_id");
             //System.out.println("order ids " + orderId);
 //            cId = lastOrders.get(i)[1];
 //            customers.add(getCustomer(wId, dId, cId));
             List<Row>popularItem = getPopularItem(wId, dId, orderId);
+            popularItemOfOrder.add(popularItem);
             //System.out.println("item ids:");
             for (Row item: popularItem) {
                 int itemId = item.getInt("ol_i_id");
                 //System.out.println("itemId " + itemId);
                 if (!popularItems.contains(itemId)) {
                     popularItems.add(itemId);
+                    popularItemName.add(item.getString("ol_i_name"));
                 }
             }
         }
@@ -94,7 +99,8 @@ public class PopularItemTransaction {
 //            itemName[i] = getItemName(itemId);
             percentage[i] = getPercentage(wId, dId, lastOrders, itemId);
         }
-        //outputPopularItems(wId, dId, numOfOrders, lastOrders,popularItems, percentage);
+        //outputPopularItems(wId, dId, numOfOrders, lastOrders, popularItemOfOrder,
+        //        popularItemName, percentage);
     }
 
 
@@ -146,7 +152,29 @@ public class PopularItemTransaction {
 
     }
 
-    private void outputPopularItems(){
+    private void outputPopularItems(final int wId, final int dId, final int numOfOrders, List<Row> lastOrders,
+                                    List<List<Row>> popularItemOfOrder, List<String> popularItemName, int[] percentage){
+        System.out.println("WId: " + wId + " DId: " + dId);
+        System.out.println("number of orders been examined: " + numOfOrders);
+        for (int i = 0; i < numOfOrders; i++) {
+            Row order = lastOrders.get(i);
+            System.out.println("order Id: " + order.getInt("o_id"));
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //Or whatever format fits best your needs.
+            String dateStr = sdf.format(order.getTimestamp("o_entry_d"));
+            System.out.println("entry date and time: " + dateStr);
+            System.out.println("customer name: " + order.getString("o_c_first") + " "
+                    + order.getString("o_c_middle") + " " + order.getString("o_c_last"));
+            for (Row pitem: popularItemOfOrder.get(i)) {
+                System.out.println("item name: " + pitem.getString("ol_i_name"));
+                System.out.println("item quantity: " + (pitem.getDecimal("ol_quantity")).intValue());
+            }
+        }
+        for (int i = 0; i < popularItemName.size(); i++) {
+            System.out.println("popular item percentage:");
+            System.out.println("item name: " + popularItemName.get(i));
+            double per = percentage[i] * 100.0 / numOfOrders;
+            System.out.println(String.format("percentage: %.2f", per));
+        }
 
     }
 
