@@ -23,7 +23,7 @@ and ensure `mvn --version` command works
 
 1. Start cassandra on local machine: `<path to cassandra folder>/cassandra -f`. For nodes, following this guildline https://docs.datastax.com/en/cassandra/2.1/cassandra/initialize/initializeSingleDS.html to setup your clusters. Remeber to update the rpc_address as your IP address instead of 'localhost'.
 
-2. Make a copy of `.env.example` file and rename it to `config.env`.
+2. Clone this repo to wherever you wish to run the client (e.g. cs4224e@sunfire.comp.nus.edu.sg). Make a copy of `.env.example` file and rename it to `config.env`.
  
 3. For `.env` file, add in values for `CONTACT_POINTS` 
 _(if multiple nodes are used, separate them with comma for example: 1.2.3.4,1.2.3.5 )_
