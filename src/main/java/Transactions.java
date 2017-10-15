@@ -35,10 +35,8 @@ class Transactions {
     Transactions(int index, String consistencyLevel) {
         QueryOptions queryOptions;
         if (consistencyLevel.equalsIgnoreCase("ONE")) {
-            System.out.println("one");
             queryOptions = new QueryOptions().setConsistencyLevel(ConsistencyLevel.ONE);
         } else {
-            System.out.println("quorum");
             queryOptions = new QueryOptions().setConsistencyLevel(ConsistencyLevel.QUORUM);
         }
 
