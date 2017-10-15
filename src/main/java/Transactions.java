@@ -1,7 +1,9 @@
 package main.java;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.QueryOptions;
 
 import java.util.List;
 
@@ -31,14 +33,20 @@ class Transactions {
     private TopBalanceTransaction topBalanceTransaction;
 
     Transactions(int index, String consistencyLevel) {
+        QueryOptions queryOptions;
+        if (consistencyLevel.equalsIgnoreCase("ONE")) {
+            System.out.println("one");
+            queryOptions = new QueryOptions().setConsistencyLevel(ConsistencyLevel.ONE);
+        } else {
+            System.out.println("quorum");
+            queryOptions = new QueryOptions().setConsistencyLevel(ConsistencyLevel.QUORUM);
+        }
+
         Cluster cluster = Cluster.builder()
                 .addContactPoint(CONTACT_POINTS[index % 5])
+                .withQueryOptions(queryOptions)
                 .build();
         session = cluster.connect(KEY_SPACE);
-
-        // set consistency level
-//        String setConsistencyCmd = "CONSISTENCY " + consistencyLevel + ";";
-//        session.execute(setConsistencyCmd);
 
         orderTransaction = new OrderTransaction(session);
         paymentTransaction = new PaymentTransaction(session);
